@@ -25,6 +25,8 @@
 '''
 ===============================================================================
 Interactive Sandbar Segmentation using GrabCut algorithm.
+A Program by Daniel Buscombe, USGS
+April 2016
 
 README FIRST:
     Two windows will show up, one for input and one for output.
@@ -45,13 +47,24 @@ Key 's' - To save the results
 
 from __future__ import print_function
 
-import Tkinter
+#import Tkinter
 from Tix import *
 
+try:
+    import Tkinter
+    import tkFont
+except ImportError: # py3k
+    import tkinter as Tkinter
+    import tkinter.font as tkFont
+
 import ttk
+
 from tkFileDialog import askopenfilename
 import os
-from PIL import Image, ImageTk
+from glob import glob
+
+from ttkcalendar import *
+import calendar
 
 #import webbrowser
 import tkMessageBox
@@ -66,6 +79,84 @@ from skimage.measure import regionprops, label
 import numpy as np
 import cv2
 
+import cPickle as pickle
+import datetime as DT
+
+import calendar
+
+rootfolder = '/home/dbuscombe/'
+
+
+##============================================
+def toTimestamp(d):
+  return calendar.timegm(d.timetuple())
+
+##======================================================
+def load_gagedata(nearest_gage):
+   if nearest_gage == 0:
+      dat =  pickle.load( open( "rm0_time_Qcfs.p", "rb" ) )
+   elif nearest_gage == 1:
+      dat =  pickle.load( open( "rm30_time_Qcfs.p", "rb" ) )
+   elif nearest_gage == 2:
+      dat =  pickle.load( open( "rm61_time_Qcfs.p", "rb" ) )
+   elif nearest_gage == 3:
+      dat =  pickle.load( open( "rm87_time_Qcfs.p", "rb" ) )
+   elif nearest_gage == 4:
+      dat =  pickle.load( open( "rm166_time_Qcfs.p", "rb" ) )
+   elif nearest_gage == 5:
+      dat =  pickle.load( open( "rm225_time_Qcfs.p", "rb" ) )
+   else:
+      print("error specifiying gage")
+
+   return dat
+   
+   #cfs to cms = 0.028316847
+
+#======================================================
+def read_image(filename, scale):
+   img = imresize(cv2.imread(filename),scale) #resize image so quarter size 
+   imagehsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV) 
+   im = imresize(cv2.imread(filename,0),scale) #resize image so quarter size 
+   la = cv2.Laplacian(im,cv2.CV_64F)
+   # get std and mean through stndard deviation, fast thru convolution
+   m1, s1 = std_convoluted(im, .5)
+   m2, s2 = std_convoluted(im, .25)
+   return img, imagehsv, im, la, m1, s1, m2, s2   
+
+#=====================================================
+def clean_mask(mask, imagehsv, s1, s2, m1, m2):
+    try:
+       mask[imagehsv[:,:,0]>np.percentile(imagehsv[:,:,0],75)] = 2
+       mask[imagehsv[:,:,1]>np.percentile(imagehsv[:,:,1],75)] = 2
+       mask[imagehsv[:,:,2]<np.percentile(imagehsv[:,:,2],50)] = 2
+      
+       mask[s1>np.percentile(s1,75)] = 2
+       mask[s2>np.percentile(s2,75)] = 2
+       mask[la>np.percentile(la,75)] = 2
+
+       mask[m1<np.percentile(m1,50)] = 2
+       mask[m2<np.percentile(m2,50)] = 2
+    except:
+       pass
+
+    return mask
+
+#=====================================================
+def finalise_mask(mask2, Athres):
+    try:
+       l = label(mask2)
+       for region in regionprops(l):
+          if (region.area<Athres): 
+             l[l==region.label] = 0
+        
+       mask2 = (l>0).astype('uint8')
+                 
+       mask2 = dilation(mask2, disk(3))
+       mask2 = remove_small_holes(mask2, min_size=10000).astype('uint8') 
+    except:
+       pass
+
+    return mask2 
 
 ##======================================================
 def std_convoluted(image, N):
@@ -141,8 +232,6 @@ def gui():
 
         print(__doc__)
 
-        #filename = '/home/dbuscombe/github_clones/sandbar_seg/30mile.JPG'
-
 	#=======================
 	# NOTE: Frame will make a top-level window if one doesn't already exist which
 	# can then be accessed via the frame's master attribute
@@ -178,14 +267,6 @@ def gui():
 
 	read_frame.configure(background='GoldenRod1')
 
-	Read_msg = [
-	    "Read a .DAT and associated set of .SON files recorded by a Humminbird(R) instrument.\n\n",
-	    "Parse the data into a set of memory mapped files that will",
-	    "subsequently be used by the other functions of the PyHum module.\n\n" ,  
-	    "Export time-series data and metadata in other formats.\n\n",    
-	    "Create a kml file for visualising boat track be selected.\n\n"
-	    "Create rudimentary plots of the data"]
-
 	#lbl2 = Tkinter.Label(read_frame, wraplength='4i', justify=Tkinter.LEFT, anchor=Tkinter.N, text=''.join(Read_msg))
 
 	#lbl2.configure(background='thistle3', fg="black")
@@ -193,27 +274,20 @@ def gui():
 	## position and set resize behavior
 	#lbl2.grid(row=0, column=0, columnspan=1, sticky='new', pady=5)
 
-	#def hello1():
-	#   tkMessageBox.showinfo("Read Data Instructions", "DAT file: path to the .DAT file\n\n SON files: path to *.SON files\n\n Model: 3 or 4 number code indicating model of sidescan unit\n\n Bed Pick: 1 = auto, 0 = manual, 3=auto with manual override\n\n Sound speed: typically, 1450 m/s in freshwater, 1500 in saltwater\n\n Transducer length: m\n\n Draft: m\n\n cs2cs_args: argument given to pyproj to turn wgs84 coords. to projection supported by proj.4. Default='epsg:26949'\n\n Chunk: partition data to chunks. 'd' - distance, m. 'p' - number of pings. 'h' - change in heading, degs. '1' - just 1 chunk\n\n Flip Port/Star: flip port and starboard sidescans\n\n Filter bearing: spike removing filter to bearing\n\n Calculate bearing: recaluclate bearing from positions")
-
 	def hello1_alt():
-	   try:
-	      root = Tk()
-	      root.wm_title("Read module")
-	      S = Scrollbar(root)
-	      T = Text(root, height=40, width=60, wrap=WORD)
-	      S.pack(side=RIGHT, fill=Y)
-	      T.pack(side=LEFT, fill=Y)
-	      S.config(command=T.yview)
-	      T.config(yscrollcommand=S.set)
+	   root = Tk()
+	   root.wm_title("Read & Process Images")
+	   S = Scrollbar(root)
+	   T = Text(root, height=40, width=60, wrap=WORD)
+	   S.pack(side=RIGHT, fill=Y)
+	   T.pack(side=LEFT, fill=Y)
+	   S.config(command=T.yview)
+	   T.config(yscrollcommand=S.set)
 
-	      T.tag_configure('bold_italics', font=('Arial', 12, 'bold', 'italic'))
-	      T.tag_configure('big', font=('Verdana', 20, 'bold'))
-	      T.tag_configure('color', foreground='#476042', font=('Tempus Sans ITC', 12, 'bold'))
-
-	      T.insert(END, __doc__)
-	   except:
-	      hello1()   
+	   T.tag_configure('bold_italics', font=('Arial', 12, 'bold', 'italic'))
+	   T.tag_configure('big', font=('Verdana', 20, 'bold'))
+	   T.tag_configure('color', foreground='#476042', font=('Tempus Sans ITC', 12, 'bold'))
+           T.insert(END, __doc__)  
 
 	MSG1_btn = Tkinter.Button(read_frame, text = "Instructions", command = hello1_alt)
 	MSG1_btn.grid(row=0, column=1, pady=(2,4))
@@ -223,11 +297,11 @@ def gui():
 	read_frame.columnconfigure((0,1), weight=1, uniform=1)
 
 	#=======================
-	# get son files
-	sonVar = Tkinter.StringVar()
+	# get image files
+	#sonVar = Tkinter.StringVar()
 	self.read_son_btn = Tkinter.Button(read_frame, text='Get image files', underline=0,
-		         command=lambda v=sonVar: _get_SON(master, v))
-	son = Tkinter.Label(read_frame, textvariable=sonVar, name='dat')
+		         command=lambda :_get_images()) #v=sonVar:  master, v))
+	#son = Tkinter.Label(read_frame, name='dat') #textvariable=sonVar
 	self.read_son_btn.grid(row=1, column=1, pady=(2,4))
 	self.read_son_btn.configure(background='thistle3', fg="black")
 
@@ -235,20 +309,31 @@ def gui():
 	# process button
 	proc_btn = Tkinter.Button(read_frame, text='Process!', underline=0,
 		         command=lambda :_proc(self))
-	proc_btn.grid(row=7, column=1, pady=(2,4))
+	proc_btn.grid(row=2, column=1, pady=(2,4))
 	proc_btn.configure(background='thistle3', fg="black")
 
-	#=======================
-	def _get_SON(master, v):
-	    self.SONfiles = askopenfilename(filetypes=[("Image files","*.JPG")], multiple=True)
+        # ========================
+        # close windows
+	destroy_btn = Tkinter.Button(read_frame, text='Quit', underline=0,
+		         command=lambda :_quit(self))
+	destroy_btn.grid(row=3, column=1, pady=(2,4))
+	destroy_btn.configure(background='thistle3', fg="black")
 
-	    for k in xrange(len(self.SONfiles)):
-	       print(self.SONfiles[k])
-	    self.folder = os.path.dirname(self.SONfiles[0])
+	#=======================
+	def _quit(master):
+           cv2.destroyAllWindows()
+           master.destroy()
+
+	#=======================
+	def _get_images(): #(master, v):
+	    self.qimagefiles = askopenfilename(filetypes = [ ("Image Files", ("*.jpg", "*.JPG", '*.jpeg')), ("TIF",('*.tif', '*.tiff'))] , multiple=True)
+
+	    for k in xrange(len(self.imagefiles)):
+	       print(self.imagefiles[k])
+	    self.folder = os.path.dirname(self.imagefiles[0])
 	    
 	    #self.son_btn.configure(fg='thistle3', background="black")
-
-	    self.read_son_btn.configure(fg='thistle3', background="black")
+	    #self.read_son_btn.configure(fg='thistle3', background="black")
 	    
 	    self.update() 
 
@@ -257,7 +342,7 @@ def gui():
 
             global img,img2,drawing,value,mask,rectangle,rect,rect_or_mask,ix,iy,rect_over
 
-            for filename in self.SONfiles:
+            for filename in self.imagefiles:
 	       print('Processing ' + filename)
 
                BLUE = [255,0,0]        # rectangle color
@@ -279,17 +364,7 @@ def gui():
                Athres = 1000
                scale = 0.25
 
-               img = imresize(cv2.imread(filename),scale) #resize image so quarter size
-    
-               imagehsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    
-               im = imresize(cv2.imread(filename,0),scale) #resize image so quarter size
-    
-               la = cv2.Laplacian(im,cv2.CV_64F)
-
-               # get std and mean through stndard deviation, fast thru convolution
-               m1, s1 = std_convoluted(im, .5)
-               m2, s2 = std_convoluted(im, .25)    
+               img, imagehsv, im, la, m1, s1, m2, s2 = read_image(filename, scale)  
     
                #img,img2,drawing,value,mask,rectangle,rect,rect_or_mask,ix,iy,rect_over
                img2 = img.copy()                               # a copy of original image
@@ -350,19 +425,7 @@ def gui():
 
                            cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,1,cv2.GC_INIT_WITH_RECT)
                 
-                           try:
-                              mask[imagehsv[:,:,0]>np.percentile(imagehsv[:,:,0],75)] = 2
-                              mask[imagehsv[:,:,1]>np.percentile(imagehsv[:,:,1],75)] = 2
-                              mask[imagehsv[:,:,2]<np.percentile(imagehsv[:,:,2],50)] = 2
-      
-                              mask[s1>np.percentile(s1,75)] = 2
-                              mask[s2>np.percentile(s2,75)] = 2
-                              mask[la>np.percentile(la,75)] = 2
-
-                              mask[m1<np.percentile(m1,50)] = 2
-                              mask[m2<np.percentile(m2,50)] = 2
-                           except:
-                              pass
+                           mask = clean_mask(mask, imagehsv, s1, s2, m1, m2)
                            
                            rect_or_mask = 1
                        elif rect_or_mask == 1:         # grabcut with mask
@@ -372,18 +435,343 @@ def gui():
 
                    mask2 = np.where((mask==1) + (mask==3),255,0).astype('uint8')
 
-                   try:
-                      l = label(mask2)
-                      for region in regionprops(l):
-                         if (region.area<Athres): 
-                            l[l==region.label] = 0
-        
-                      mask2 = (l>0).astype('uint8')
-                 
-                      mask2 = dilation(mask2, disk(3))
-                      mask2 = remove_small_holes(mask2, min_size=10000).astype('uint8') 
-                   except:
-                      pass 
+                   mask2 = finalise_mask(mask2, Athres)
+                        
+                   output = cv2.bitwise_and(img2,img2,mask=mask2)
+
+               cv2.destroyAllWindows()
+
+	#==============================================================
+	#==============================================================
+	#========END 1st tab
+
+
+
+	#==============================================================
+	#==============================================================
+	#========START 2nd tab
+
+	# Populate the second pane. Note that the content doesn't really matter
+	q_frame = Tkinter.Frame(nb)
+	nb.add(q_frame, text='Process Images Based on Site/Time/Discharge')#, state='disabled')
+
+	q_frame.configure(background='SeaGreen1')
+
+	def hello1_alt():
+	   root = Tk()
+	   root.wm_title("Process Images Based on Site/Time/Discharge")
+	   S = Scrollbar(root)
+	   T = Text(root, height=40, width=60, wrap=WORD)
+	   S.pack(side=RIGHT, fill=Y)
+	   T.pack(side=LEFT, fill=Y)
+	   S.config(command=T.yview)
+	   T.config(yscrollcommand=S.set)
+
+	   T.tag_configure('bold_italics', font=('Arial', 12, 'bold', 'italic'))
+	   T.tag_configure('big', font=('Verdana', 20, 'bold'))
+	   T.tag_configure('color', foreground='#476042', font=('Tempus Sans ITC', 12, 'bold'))
+           T.insert(END, __doc__)  
+
+	MSG1_btn = Tkinter.Button(q_frame, text = "Instructions", command = hello1_alt)
+	MSG1_btn.grid(row=0, column=0, pady=(2,4))
+	MSG1_btn.configure(background='thistle3', fg="black")
+
+	q_frame.rowconfigure(1, weight=1)
+	q_frame.columnconfigure((0,1), weight=1, uniform=1)
+
+
+	#=======================
+	#menu for site
+	self.bb=  Tkinter.Menubutton ( q_frame, text="Choose Site", relief=Tkinter.RAISED)
+	self.bb.grid(column = 0, row = 1, pady=(2,4))
+	self.bb.menu  =  Tkinter.Menu ( self.bb, tearoff = 1 , background='PaleVioletRed1', fg="black")
+
+        sitelist = np.genfromtxt('sites.txt', dtype=str)
+
+        submenu1 = Menu(self.bb.menu)
+        for site in xrange(11): #sitelist:
+	   submenu1.add_command(label=sitelist[site], command = lambda v=site: _SetSitePick(master, v),  font=('Arial', 10, 'bold', 'italic'))
+
+        self.bb.menu.add_cascade(label='Upper Marble Canyon', menu=submenu1, underline=0)
+
+        submenu2 = Menu(self.bb.menu)
+        for site in xrange(12,34): #sitelist:
+	   submenu2.add_command(label=sitelist[site], command = lambda v=site: _SetSitePick(master, v),  font=('Arial', 10, 'bold', 'italic'))
+
+        self.bb.menu.add_cascade(label='Lower Marble Canyon', menu=submenu2, underline=0)
+
+
+        submenu3 = Menu(self.bb.menu)
+        for site in xrange(35, 47): #sitelist:
+	   submenu3.add_command(label=sitelist[site], command = lambda v=site: _SetSitePick(master, v),  font=('Arial', 10, 'bold', 'italic'))
+
+        self.bb.menu.add_cascade(label='Eastern Grand Canyon', menu=submenu3, underline=0)
+
+
+        submenu4 = Menu(self.bb.menu)
+        for site in xrange(48,71): #sitelist:
+	   submenu4.add_command(label=sitelist[site], command = lambda v=site: _SetSitePick(master, v),  font=('Arial', 10, 'bold', 'italic'))
+
+        self.bb.menu.add_cascade(label='Western Grand Canyon', menu=submenu4, underline=0)
+
+
+	self.bb["menu"]  =  self.bb.menu
+	self.bb.configure(background='thistle3', fg="black")
+
+
+	#=======================
+	# discharge
+	self.Nvar = Tkinter.DoubleVar()
+	Nscale = Tkinter.Scale( q_frame, variable = self.Nvar, from_=5000, to=45000, resolution=1000, tickinterval=1000, label = 'Discharge' )
+	Nscale.set(8000)
+	Nscale.grid(row=1, column=1,  pady=(2,4))
+	Nscale.configure(background='thistle3', fg="black")
+
+
+	#=======================
+	# start date button
+	#start_btn = Tkinter.Button(q_frame, text='Start Date', underline=0,
+	#	         command=lambda :_qstart())
+        start = Calendar2(q_frame)
+	start.grid(row=2, column=0, pady=(2,4))
+	#start_btn.configure(background='thistle3', fg="black")
+
+        self.startdate = start.selection
+
+	start_btn = Tkinter.Button(q_frame, text='Set Start Date', underline=0,
+		         command=lambda :_qstart(start))
+	start_btn.grid(row=3, column=0, pady=(2,4))
+	start_btn.configure(background='thistle3', fg="black")
+
+	#=======================
+	# end date button
+        end = Calendar2(q_frame)
+	end.grid(row=2, column=1, pady=(2,4))
+
+        self.enddate = end.selection
+
+	end_btn = Tkinter.Button(q_frame, text='Set End Date', underline=0,
+		         command=lambda :_qend(end))
+	end_btn.grid(row=3, column=1, pady=(2,4))
+	end_btn.configure(background='thistle3', fg="black")
+
+
+	#=======================
+	# find images button
+	qfind_btn = Tkinter.Button(q_frame, text='Find Images', underline=0,
+		         command=lambda :_qfind())
+	qfind_btn.grid(row=4, column=0, pady=(2,4))
+	qfind_btn.configure(background='thistle3', fg="black")
+
+	#=======================
+	# process button
+	qproc_btn = Tkinter.Button(q_frame, text='Process!', underline=0,
+		         command=lambda :_qproc(self))
+	qproc_btn.grid(row=4, column=1, pady=(2,4))
+	qproc_btn.configure(background='thistle3', fg="black")
+
+
+        # ========================
+        # close windows
+	qdestroy_btn = Tkinter.Button(q_frame, text='Quit', underline=0,
+		         command=lambda :_qquit(self))
+	qdestroy_btn.grid(row=5, column=1, pady=(2,4))
+	qdestroy_btn.configure(background='thistle3', fg="black")
+
+
+	#=======================   
+	def _qstart(start):	       
+           self.startdate = start.selection
+           print("======================")
+           print("Start Date:")
+           print(self.startdate)
+           print("======================")
+           self.update()
+
+	#=======================   
+	def _qend(end):	   
+           print("======================")
+           print("End Date:")
+           self.enddate = end.selection
+           print(self.enddate)
+           print("======================")
+           self.update()
+
+	#=======================   
+	def _SetSitePick(master, v):
+           sitelist = np.genfromtxt('sites.txt', dtype=str)
+     
+	   self.sitepick= sitelist[v]
+           print("site selected: "+self.sitepick)
+
+	   #self.bb.configure(fg='thistle3', background="black")
+	   self.update()          
+
+	#=======================
+	def _qquit(master):
+           cv2.destroyAllWindows()
+           master.destroy()
+
+	#=======================
+	def _qfind():
+           imagefolder = rootfolder + self.sitepick + os.sep
+
+           # get a list of all the jpegs in the specified site folder
+           types = ('*.jpg', '*.JPG', '*.jpeg')
+           infiles = []
+           for filetypes in types:
+              infiles.extend(glob(imagefolder+filetypes))
+
+           print("Number of files to search: "+str(len(infiles)))
+
+           # determine the nearest gage and load the appropriate discharge data
+           site = int(self.sitepick.split('RC')[-1].split('_')[0][:3])
+           gages = np.asarray([0,30,61,87,166,225])
+           nearest_gage = np.argmin(np.abs(site - gages))
+
+           print("Loading data from nearest gage ("+str(gages[nearest_gage])+" mile)")
+           dat = load_gagedata(nearest_gage)
+
+           # get unix timestamps rfom the user selected start and end dates
+           #start_time = toTimestamp(DT.datetime.strptime(self.startdate, '%Y-%m-%d %H:%M:%S'))+ 6 * 60 * 60
+           #end_time = toTimestamp(DT.datetime.strptime(self.enddate, '%Y-%m-%d %H:%M:%S'))+ 6 * 60 * 60
+           start_time = toTimestamp(self.startdate)+ 6 * 60 * 60
+           end_time = toTimestamp(self.enddate)+ 6 * 60 * 60
+           
+           # get unix timestamps and discharges of every file
+           I = []; Q = []
+           for filename in infiles:
+               ext = os.path.splitext(filename)[1][1:]
+               date = filename.split(os.sep)[-1].split('RC')[-1].split('_')[1]
+               time = filename.split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
+               image_time = toTimestamp(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M'))+ 6 * 60 * 60
+               I.append(image_time)
+               # add 6 hours (mst to gmt)
+               Q.append(np.interp(image_time,dat['timeunix'],dat['Qcfs']))
+
+           Q = np.asarray(Q)
+           I = np.asarray(I)
+
+           indices = np.where((I>=start_time) & (I<=end_time) & (Q>=self.Nvar.get()-100) & (Q<=self.Nvar.get()+100))[0]
+           print("Number of files within time window and near specified discharge: "+str(len(indices)))
+
+           self.qimagefiles = np.asarray(infiles)[indices]
+	   self.update() 
+
+	#=======================
+	def _qget_images(): #(master, v):
+	    self.qimagefiles = askopenfilename(filetypes = [ ("Image Files", ("*.jpg", "*.JPG", '*.jpeg')), ("TIF",('*.tif', '*.tiff'))] , multiple=True)
+
+	    for k in xrange(len(self.qimagefiles)):
+	       print(self.qimagefiles[k])
+	    self.qfolder = os.path.dirname(self.qimagefiles[0])
+	    
+	    #self.son_btn.configure(fg='thistle3', background="black")
+
+	    self.q_son_btn.configure(fg='thistle3', background="black")
+	    
+	    self.update() 
+
+	#=======================
+	def _qproc(self):
+
+            global img,img2,drawing,value,mask,rectangle,rect,rect_or_mask,ix,iy,rect_over
+
+            for filename in self.qimagefiles:
+	       print('Processing ' + filename)
+
+ 
+               BLUE = [255,0,0]        # rectangle color
+               BLACK = [0,0,0]         # sure BG
+               WHITE = [255,255,255]   # sure FG
+
+               DRAW_BG = {'color' : BLACK, 'val' : 0}
+               DRAW_FG = {'color' : WHITE, 'val' : 1}
+
+               # setting up flags
+               rect = (0,0,1,1)
+               drawing = False         # flag for drawing curves
+               rectangle = False       # flag for drawing rect
+               rect_over = False       # flag to check if rect drawn
+               rect_or_mask = 100      # flag for selecting rect or mask mode
+               value = DRAW_FG         # drawing initialized to FG
+               thickness = 2           # brush thickness
+
+               Athres = 1000
+               scale = 0.25
+
+               img, imagehsv, im, la, m1, s1, m2, s2 = read_image(filename, scale)  
+    
+               #img,img2,drawing,value,mask,rectangle,rect,rect_or_mask,ix,iy,rect_over
+               img2 = img.copy()                               # a copy of original image
+               mask = np.zeros(img.shape[:2],dtype = np.uint8) # mask initialized to PR_BG
+               output = np.zeros(img.shape,np.uint8)           # output image to be shown
+
+               # input and output windows
+               cv2.namedWindow('output', cv2.WINDOW_AUTOSIZE)
+
+               cv2.namedWindow('input', cv2.WINDOW_AUTOSIZE)
+
+               cv2.setMouseCallback('input',onmouse)
+               cv2.moveWindow('input',img.shape[1]+10,90)
+
+               print(" Instructions: \n")
+               print(" Draw a rectangle around the object using right mouse button \n")
+
+               while(1):
+
+                   cv2.imshow('output',output)
+                   cv2.imshow('input',img)
+                   k = 0xFF & cv2.waitKey(1)
+
+                   # key bindings
+                   if k == 27:         # esc to exit
+                       break
+                   elif k == ord('0'): # BG drawing
+                       print(" mark background regions with left mouse button \n")
+                       value = DRAW_BG
+                   elif k == ord('1'): # FG drawing
+                       print(" mark foreground regions with left mouse button \n")
+                       value = DRAW_FG
+                   elif k == ord('s'): # save image
+                       bar = np.zeros((img.shape[0],5,3),np.uint8)
+                       res = np.hstack((img2,bar,img,bar,output))
+                       cv2.imwrite(filename+'_output.png',res)
+                       print(" Result saved as image \n")
+
+                       pickle.dump( {'image':img, 'mask':output}, open( filename+"_out.p", "wb" ) )
+
+                   elif k == ord('r'): # reset everything
+                       print("resetting \n")
+                       rect = (0,0,1,1)
+                       drawing = False
+                       rectangle = False
+                       rect_or_mask = 100
+                       rect_over = False
+                       value = DRAW_FG
+                       img = img2.copy()
+                       mask = np.zeros(img.shape[:2],dtype = np.uint8) # mask initialized to PR_BG
+                       output = np.zeros(img.shape,np.uint8)           # output image to be shown
+                   elif k == ord('n'): # segment the image
+                       print(""" For finer touchups, mark foreground and background after pressing keys 0-3
+                       and again press 'n' \n""")
+                       if (rect_or_mask == 0):         # grabcut with rect
+                           bgdmodel = np.zeros((1,65),np.float64)
+                           fgdmodel = np.zeros((1,65),np.float64)
+
+                           cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,1,cv2.GC_INIT_WITH_RECT)
+                
+                           mask = clean_mask(mask, imagehsv, s1, s2, m1, m2)
+                           
+                           rect_or_mask = 1
+                       elif rect_or_mask == 1:         # grabcut with mask
+                           bgdmodel = np.zeros((1,65),np.float64)
+                           fgdmodel = np.zeros((1,65),np.float64)
+                           cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,1,cv2.GC_INIT_WITH_MASK)
+
+                   mask2 = np.where((mask==1) + (mask==3),255,0).astype('uint8')
+
+                   mask2 = finalise_mask(mask2, Athres)
                         
                    output = cv2.bitwise_and(img2,img2,mask=mask2)
 
@@ -403,3 +791,12 @@ if __name__ == '__main__':
    
    gui()
 
+
+
+               #img = imresize(cv2.imread(filename),scale) #resize image so quarter size
+               #imagehsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+               #im = imresize(cv2.imread(filename,0),scale) #resize image so quarter size
+               #la = cv2.Laplacian(im,cv2.CV_64F)
+               # get std and mean through stndard deviation, fast thru convolution
+               #m1, s1 = std_convoluted(im, .5)
+               #m2, s2 = std_convoluted(im, .25)  
