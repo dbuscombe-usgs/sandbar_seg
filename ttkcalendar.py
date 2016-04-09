@@ -94,6 +94,11 @@ class Calendar(ttk.Frame):
         hframe = ttk.Frame(self)
         lbtn = ttk.Button(hframe, style='L.TButton', command=self._prev_month)
         rbtn = ttk.Button(hframe, style='R.TButton', command=self._next_month)
+
+        ## add buttons for years
+        #lbtn2 = ttk.Button(hframe, style='L.TButton', command=self._prev_year)
+        #rbtn2 = ttk.Button(hframe, style='R.TButton', command=self._next_year)
+
         self._header = ttk.Label(hframe, width=15, anchor='center')
         # the calendar
         self._calendar = ttk.Treeview(show='', selectmode='none', height=7)
@@ -188,6 +193,7 @@ class Calendar(ttk.Frame):
         self._show_selection(text, bbox)
 
         #print self.selection
+
 
     def _prev_month(self):
         """Updated calendar to show the previous month."""

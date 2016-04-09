@@ -79,6 +79,7 @@ import cPickle as pickle
 import datetime as DT
 import calendar
 
+import matplotlib.dates as md
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import matplotlib
@@ -103,7 +104,13 @@ def ani_frames(infiles):
 
     def update_img(i):
         im.set_data(imresize(imread(infiles[i]),.25))
-        plt.title(infiles[i].split(os.sep)[-1].split('.')[0])
+
+        ext = os.path.splitext(infiles[i])[1][1:]
+        date = infiles[i].split(os.sep)[-1].split('RC')[-1].split('_')[1]
+        time = infiles[i].split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
+
+        plt.title(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M').strftime('%d %b %Y, %H:%M'))
+        #plt.title(infiles[i].split(os.sep)[-1].split('.')[0])
         return im
 
     ani = animation.FuncAnimation(fig,update_img, frames=len(infiles), interval=100, init_func = init, save_count=len(infiles))
@@ -116,6 +123,70 @@ def ani_frames(infiles):
 
     ani.save(infiles[0].split(os.sep)[-1].split('.')[0]+'_'+infiles[-1].split(os.sep)[-1].split('.')[0]+'.mp4',writer=writer,dpi=600)
     del fig
+    print("Done!")
+    return ani
+
+##============================================
+def ani_frames_withQdat(infiles, dat):
+
+    fig = plt.figure()
+
+    Q = []; D = []; T = []; datenums = []
+    for infile in infiles:
+       ext = os.path.splitext(infile)[1][1:]
+       date = infile.split(os.sep)[-1].split('RC')[-1].split('_')[1]
+       time = infile.split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
+
+       image_time = toTimestamp(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M'))+ 6 * 60 * 60
+       Q.append(np.interp(image_time,dat['timeunix'],dat['Qcfs']))
+       D.append(date)
+       T.append(time)
+       datenums.append(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M'))
+
+    ax2 = fig.add_subplot(122)
+    #ax2 = plt.axes(ylim=(np.min(np.asarray(Q))-100, np.max(np.asarray(Q))+100))
+
+    xfmt = md.DateFormatter('%Y-%m-%d')
+    ax2.xaxis.set_major_formatter(xfmt)
+
+    plt.plot(datenums,Q,'k')
+    plt.subplots_adjust(bottom=0.2)
+    plt.xticks( rotation=25 )
+    plt.ylabel('Discharge (cfs)')
+
+    line, = ax2.plot([], [], 'ro', lw=2)
+
+    ax = fig.add_subplot(121)
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    im = ax.imshow(imresize(imread(infiles[0]),.25))
+ 
+    def init():
+       im.set_data([[]])
+       line.set_data([], [])
+       return im, line
+
+    def update_img(i):
+        im.set_data(imresize(imread(infiles[i]),.25))
+        line.set_data(datenums[i], Q[i])
+        try:
+           ax.title(DT.datetime.strptime(D[i]+' '+T[i], '%Y%m%d %H%M').strftime('%d %b %Y, %H:%M')+' --  '+str(Q[i]).split('.')[0]+' cfs')
+        except:
+           pass
+        return im, line
+
+    ani = animation.FuncAnimation(fig,update_img, frames=len(infiles), interval=100, init_func = init, save_count=len(infiles))
+    if animation.writers.is_available('ffmpeg'):
+       print('using ffmpeg to compile video')
+       writer = animation.writers['ffmpeg'](fps=1)
+    else:
+       print('using avconv to compile video')    
+       writer = animation.writers['avconv'](fps=1)    
+
+    ani.save(infiles[0].split(os.sep)[-1].split('.')[0]+'_'+infiles[-1].split(os.sep)[-1].split('.')[0]+'.mp4',writer=writer,dpi=600)
+    del fig
+    print("Done!")
     return ani
 
 ##============================================
@@ -285,6 +356,8 @@ def gui():
 
     nb.pack(fill=Tkinter.BOTH, expand=Tkinter.Y, padx=2, pady=3)  # add margin
 
+    self.datloaded = 0
+
     #==============================================================
     #==============================================================
     #========START about tab
@@ -353,6 +426,10 @@ def gui():
     #=======================
     def _make_movie():
        ani_frames(self.imagefiles)
+
+    #=======================
+    def _make_movie_withQdat():
+       ani_frames_withQdat(self.imagefiles, self.dat)
 
     #=======================
     def _get_images():
@@ -552,14 +629,14 @@ def gui():
     #=======================
     # make movie
     self.movie2_btn = Tkinter.Button(q_frame, text='Make movie', underline=0,
-	             command=lambda :_make_movie())
+	             command=lambda :_make_movie_withQdat())
     self.movie2_btn.grid(row=4, column=1, pady=(2,4))
     self.movie2_btn.configure(background='thistle3', fg="black")
 
     #=======================
     # process button
     qproc_btn = Tkinter.Button(q_frame, text='Process!', underline=0,
-	             command=lambda :_qproc(self))
+	             command=lambda :_proc(self))
     qproc_btn.grid(row=5, column=0, pady=(2,4))
     qproc_btn.configure(background='thistle3', fg="black")
 
@@ -618,8 +695,10 @@ def gui():
         gages = np.asarray([0,30,61,87,166,225])
         nearest_gage = np.argmin(np.abs(site - gages))
 
-        print("Loading data from nearest gage ("+str(gages[nearest_gage])+" mile)")
-        dat = load_gagedata(nearest_gage)
+        if self.datloaded == 0:
+           print("Loading data from nearest gage ("+str(gages[nearest_gage])+" mile)")
+           self.dat = load_gagedata(nearest_gage)
+           self.datloaded = 1
 
         # get unix timestamps rfom the user selected start and end dates
         start_time = toTimestamp(self.startdate)+ 6 * 60 * 60
@@ -634,7 +713,7 @@ def gui():
             image_time = toTimestamp(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M'))+ 6 * 60 * 60
             I.append(image_time)
             # add 6 hours (mst to gmt)
-            Q.append(np.interp(image_time,dat['timeunix'],dat['Qcfs']))
+            Q.append(np.interp(image_time,self.dat['timeunix'],self.dat['Qcfs']))
 
         Q = np.asarray(Q)
         I = np.asarray(I)
@@ -735,14 +814,14 @@ def gui():
     #=======================
     # make movie
     self.movie3_btn = Tkinter.Button(t_frame, text='Make movie', underline=0,
-	             command=lambda :_make_movie())
+	             command=lambda :_make_movie_withQdat())
     self.movie3_btn.grid(row=4, column=1, pady=(2,4))
     self.movie3_btn.configure(background='thistle3', fg="black")
 
     #=======================
     # process button
     tproc_btn = Tkinter.Button(t_frame, text='Process!', underline=0,
-	             command=lambda :_qproc(self))
+	             command=lambda :_proc(self))
     tproc_btn.grid(row=5, column=0, pady=(2,4))
     tproc_btn.configure(background='thistle3', fg="black")
 
