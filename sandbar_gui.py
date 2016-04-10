@@ -79,11 +79,12 @@ import cPickle as pickle
 import datetime as DT
 import calendar
 
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.dates as md
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use("Agg")
+
 
 # chaneg this for windows:
 rootfolder = '/home/dbuscombe/'
@@ -130,37 +131,50 @@ def ani_frames(infiles):
 def ani_frames_withQdat(infiles, dat):
 
     fig = plt.figure()
+    fig.subplots_adjust(wspace = 0.2, hspace=0.2, left=0, right=1, bottom=0, top=1)
 
     Q = []; D = []; T = []; datenums = []
+    image_times = []
     for infile in infiles:
        ext = os.path.splitext(infile)[1][1:]
        date = infile.split(os.sep)[-1].split('RC')[-1].split('_')[1]
        time = infile.split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
 
        image_time = toTimestamp(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M'))+ 6 * 60 * 60
+       image_times.append(image_time)
        Q.append(np.interp(image_time,dat['timeunix'],dat['Qcfs']))
        D.append(date)
        T.append(time)
        datenums.append(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M'))
 
-    ax2 = fig.add_subplot(122)
+    ax2 = fig.add_subplot(212, aspect=.005)
+    #ax2.set_aspect('auto')
     #ax2 = plt.axes(ylim=(np.min(np.asarray(Q))-100, np.max(np.asarray(Q))+100))
 
     xfmt = md.DateFormatter('%Y-%m-%d')
     ax2.xaxis.set_major_formatter(xfmt)
 
-    plt.plot(datenums,Q,'k')
+    ti = np.arange(image_times[0], image_times[-1], 60)
+    Qall = np.interp(ti,dat['timeunix'],dat['Qcfs'])
+
+    tiplot = []
+    for i in xrange(len(ti)):
+       tiplot.append(DT.datetime.fromtimestamp(ti[i]))
+
+    #plt.plot(datenums,Q,'k')
+    plt.plot(tiplot, Qall,'k')
     plt.subplots_adjust(bottom=0.2)
     plt.xticks( rotation=25 )
+    plt.yticks( rotation=25 )
     plt.ylabel('Discharge (cfs)')
 
     line, = ax2.plot([], [], 'ro', lw=2)
 
-    ax = fig.add_subplot(121)
+    ax = fig.add_subplot(211)
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
 
-    im = ax.imshow(imresize(imread(infiles[0]),.25))
+    im = ax.imshow(imresize(imread(infiles[0]),.25), interpolation='nearest')
  
     def init():
        im.set_data([[]])
@@ -357,6 +371,7 @@ def gui():
     nb.pack(fill=Tkinter.BOTH, expand=Tkinter.Y, padx=2, pady=3)  # add margin
 
     self.datloaded = 0
+    self.idealtime = 'all'
 
     #==============================================================
     #==============================================================
@@ -553,6 +568,14 @@ def gui():
     q_frame.columnconfigure((0,1), weight=1, uniform=1)
 
     #=======================
+    # discharge
+    self.Nvar = Tkinter.DoubleVar()
+    Nscale = Tkinter.Scale( q_frame, variable = self.Nvar, from_=5000, to=45000, resolution=1000, tickinterval=1000, label = 'Discharge' )
+    Nscale.set(8000)
+    Nscale.grid(row=0, column=1,  pady=(2,4))
+    Nscale.configure(background='thistle3', fg="black")
+
+    #=======================
     #menu for site
     self.bb=  Tkinter.Menubutton ( q_frame, text="Choose Site", relief=Tkinter.RAISED)
     self.bb.grid(column = 0, row = 1, pady=(2,4))
@@ -588,12 +611,27 @@ def gui():
     self.bb.configure(background='thistle3', fg="black")
 
     #=======================
-    # discharge
-    self.Nvar = Tkinter.DoubleVar()
-    Nscale = Tkinter.Scale( q_frame, variable = self.Nvar, from_=5000, to=45000, resolution=1000, tickinterval=1000, label = 'Discharge' )
-    Nscale.set(8000)
-    Nscale.grid(row=1, column=1,  pady=(2,4))
-    Nscale.configure(background='thistle3', fg="black")
+    #menu for time
+    self.Mb=  Tkinter.Menubutton ( q_frame, text="Set time", relief=Tkinter.RAISED)
+    self.Mb.grid(column = 1, row = 1, pady=(2,4))
+    self.Mb.menu  =  Tkinter.Menu ( self.Mb, tearoff = 1 , background='orchid2', fg="black" )
+    self.Mb.menu.add_command(label="All times", command = lambda v=1: _SetTime(v))
+    self.Mb.menu.add_command(label="Ideal time for site", command = lambda v=2: _SetTime(v))
+    self.Mb.menu.add_command(label="06:00 -- 07:00", command = lambda v=3: _SetTime(v))
+    self.Mb.menu.add_command(label="07:00 -- 08:00", command = lambda v=4: _SetTime(v))
+    self.Mb.menu.add_command(label="08:00 -- 09:00", command = lambda v=5: _SetTime(v))
+    self.Mb.menu.add_command(label="09:00 -- 10:00", command = lambda v=6: _SetTime(v))
+    self.Mb.menu.add_command(label="10:00 -- 11:00", command = lambda v=7: _SetTime(v))
+    self.Mb.menu.add_command(label="11:00 -- 12:00", command = lambda v=8: _SetTime(v))
+    self.Mb.menu.add_command(label="12:00 -- 13:00", command = lambda v=9: _SetTime(v))
+    self.Mb.menu.add_command(label="13:00 -- 14:00", command = lambda v=10: _SetTime(v))
+    self.Mb.menu.add_command(label="14:00 -- 15:00", command = lambda v=11: _SetTime(v))
+    self.Mb.menu.add_command(label="15:00 -- 16:00", command = lambda v=12: _SetTime(v))
+    self.Mb.menu.add_command(label="16:00 -- 17:00", command = lambda v=13: _SetTime(v))
+    self.Mb.menu.add_command(label="17:00 -- 18:00", command = lambda v=14: _SetTime(v))
+    self.Mb.menu.add_command(label="18:00 -- 19:00", command = lambda v=15: _SetTime(v))
+    self.Mb["menu"]  =  self.Mb.menu
+    self.Mb.configure(background='thistle3', fg="black")
 
     #=======================
     # start date button
@@ -678,6 +716,59 @@ def gui():
         cv2.destroyAllWindows()
         master.destroy()
 
+    #=======================   
+    def _SetTime(v):
+           
+       #self.sitepick= v
+       if v==1:
+          print("All times selected")
+          self.idealtime = 'all'
+       elif v==2:
+          sitetimes = np.genfromtxt('ideal_time_per_site.txt', dtype=str, delimiter=',')
+          self.idealtime = sitetimes[np.where(sitetimes[:,0] == self.sitepick)[0],1].tolist()[0].lstrip()
+          print('Time selected: '+self.idealtime)
+       elif v==3:
+          print("Time selected: 06:00 -- 07:00")
+          self.idealtime = '06:00'
+       elif v==4:
+          print("Time selected: 07:00 -- 08:00")
+          self.idealtime = '07:00'
+       elif v==5:
+          print("Time selected: 08:00 -- 09:00")
+          self.idealtime = '08:00'
+       elif v==6:
+          print("Time selected: 09:00 -- 10:00")
+          self.idealtime = '09:00'
+       elif v==7:
+          print("Time selected: 10:00 -- 11:00")
+          self.idealtime = '10:00'
+       elif v==8:
+          print("Time selected: 11:00 -- 12:00")
+          self.idealtime = '11:00'
+       elif v==9:
+          print("Time selected: 12:00 -- 13:00")
+          self.idealtime = '12:00'
+       elif v==10:
+          print("Time selected: 13:00 -- 14:00")
+          self.idealtime = '13:00'
+       elif v==11:
+          print("Time selected: 14:00 -- 15:00")
+          self.idealtime = '14:00'
+       elif v==12:
+          print("Time selected: 15:00 -- 16:00")
+          self.idealtime = '15:00'
+       elif v==13:
+          print("Time selected: 16:00 -- 17:00")
+          self.idealtime = '16:00'
+       elif v==14:
+          print("Time selected: 17:00 -- 18:00")
+          self.idealtime = '17:00'
+       elif v==15:
+          print("Time selected: 18:00 -- 19:00")
+          self.idealtime = '18:00'
+
+       self.update()  
+
     #=======================
     def _qfind():
         imagefolder = rootfolder + self.sitepick + os.sep
@@ -703,10 +794,28 @@ def gui():
         # get unix timestamps rfom the user selected start and end dates
         start_time = toTimestamp(self.startdate)+ 6 * 60 * 60
         end_time = toTimestamp(self.enddate)+ 6 * 60 * 60
+ 
+        if self.idealtime != 'all':
+           idealtime = int(self.idealtime[:2])
            
         # get unix timestamps and discharges of every file
-        I = []; Q = []
+        F=[]
         for filename in infiles:
+            ext = os.path.splitext(filename)[1][1:]
+            date = filename.split(os.sep)[-1].split('RC')[-1].split('_')[1]
+            time = filename.split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
+            timestamp = DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M')
+            if self.idealtime != 'all':
+               if timestamp.hour == (idealtime) % 24 and timestamp.minute >= 30:
+                  F.append(filename)
+               elif timestamp.hour == (idealtime) % 24 and timestamp.minute <= 30:
+                  F.append(filename)
+            else:
+               F.append(filename)
+          
+        # get unix timestamps and discharges of every file
+        I = []; Q = []
+        for filename in F: #infiles:
             ext = os.path.splitext(filename)[1][1:]
             date = filename.split(os.sep)[-1].split('RC')[-1].split('_')[1]
             time = filename.split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
@@ -721,7 +830,7 @@ def gui():
         indices = np.where((I>=start_time) & (I<=end_time) & (Q>=self.Nvar.get()-100) & (Q<=self.Nvar.get()+100))[0]
         print("Number of files within time window and near specified discharge: "+str(len(indices)))
 
-        self.imagefiles = np.asarray(infiles)[indices]
+        self.imagefiles = np.asarray(F)[indices] #infiles
         self.update() 
 
     #==============================================================
@@ -781,6 +890,29 @@ def gui():
     self.bb.configure(background='thistle3', fg="black")
 
     #=======================
+    #menu for time
+    self.Mb=  Tkinter.Menubutton ( t_frame, text="Set time", relief=Tkinter.RAISED)
+    self.Mb.grid(column = 1, row = 1, pady=(2,4))
+    self.Mb.menu  =  Tkinter.Menu ( self.Mb, tearoff = 1 , background='orchid2', fg="black" )
+    self.Mb.menu.add_command(label="All times", command = lambda v=1: _SetTime(v))
+    self.Mb.menu.add_command(label="Ideal time for site", command = lambda v=2: _SetTime(v))
+    self.Mb.menu.add_command(label="06:00 -- 07:00", command = lambda v=3: _SetTime(v))
+    self.Mb.menu.add_command(label="07:00 -- 08:00", command = lambda v=4: _SetTime(v))
+    self.Mb.menu.add_command(label="08:00 -- 09:00", command = lambda v=5: _SetTime(v))
+    self.Mb.menu.add_command(label="09:00 -- 10:00", command = lambda v=6: _SetTime(v))
+    self.Mb.menu.add_command(label="10:00 -- 11:00", command = lambda v=7: _SetTime(v))
+    self.Mb.menu.add_command(label="11:00 -- 12:00", command = lambda v=8: _SetTime(v))
+    self.Mb.menu.add_command(label="12:00 -- 13:00", command = lambda v=9: _SetTime(v))
+    self.Mb.menu.add_command(label="13:00 -- 14:00", command = lambda v=10: _SetTime(v))
+    self.Mb.menu.add_command(label="14:00 -- 15:00", command = lambda v=11: _SetTime(v))
+    self.Mb.menu.add_command(label="15:00 -- 16:00", command = lambda v=12: _SetTime(v))
+    self.Mb.menu.add_command(label="16:00 -- 17:00", command = lambda v=13: _SetTime(v))
+    self.Mb.menu.add_command(label="17:00 -- 18:00", command = lambda v=14: _SetTime(v))
+    self.Mb.menu.add_command(label="18:00 -- 19:00", command = lambda v=15: _SetTime(v))
+    self.Mb["menu"]  =  self.Mb.menu
+    self.Mb.configure(background='thistle3', fg="black")
+
+    #=======================
     # start date button
     tstart = Calendar2(t_frame)
     tstart.grid(row=2, column=0, pady=(2,4))
@@ -814,7 +946,7 @@ def gui():
     #=======================
     # make movie
     self.movie3_btn = Tkinter.Button(t_frame, text='Make movie', underline=0,
-	             command=lambda :_make_movie_withQdat())
+	             command=lambda :_make_movie())
     self.movie3_btn.grid(row=4, column=1, pady=(2,4))
     self.movie3_btn.configure(background='thistle3', fg="black")
 
@@ -849,7 +981,8 @@ def gui():
         print(self.enddate)
         print("======================")
         self.update()
-        
+
+
     #=======================
     def _tfind():
         imagefolder = rootfolder + self.sitepick + os.sep
@@ -865,14 +998,41 @@ def gui():
         # get unix timestamps rfom the user selected start and end dates
         start_time = toTimestamp(self.startdate)+ 6 * 60 * 60
         end_time = toTimestamp(self.enddate)+ 6 * 60 * 60
+
+        if self.idealtime != 'all':
+           idealtime = int(self.idealtime[:2])
            
         # get unix timestamps and discharges of every file
-        I = [];
+        F=[]
         for filename in infiles:
             ext = os.path.splitext(filename)[1][1:]
             date = filename.split(os.sep)[-1].split('RC')[-1].split('_')[1]
             time = filename.split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
-            image_time = toTimestamp(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M'))+ 6 * 60 * 60
+            timestamp = DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M')
+            if self.idealtime != 'all':
+               if timestamp.hour == (idealtime) % 24 and timestamp.minute >= 30:
+                  F.append(filename)
+               elif timestamp.hour == (idealtime) % 24 and timestamp.minute <= 30:
+                  F.append(filename)
+            else:
+               F.append(filename)
+
+        # get unix timestamps and discharges of every file
+        I = []
+        for filename in F:
+            ext = os.path.splitext(filename)[1][1:]
+            date = filename.split(os.sep)[-1].split('RC')[-1].split('_')[1]
+            time = filename.split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
+            timestamp = DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M')
+            #if self.idealtime != 'all':
+            #   if timestamp.hour == (idealtime) % 24 and timestamp.minute >= 30:
+            #      image_time = toTimestamp(timestamp)+ 6 * 60 * 60
+            #      I.append(image_time) # add 6 hours (mst to gmt)
+            #   elif timestamp.hour == (idealtime) % 24 and timestamp.minute <= 30:
+            #      image_time = toTimestamp(timestamp)+ 6 * 60 * 60
+            #      I.append(image_time) # add 6 hours (mst to gmt)
+            #else:
+            image_time = toTimestamp(timestamp)+ 6 * 60 * 60
             I.append(image_time) # add 6 hours (mst to gmt)
 
         I = np.asarray(I)
@@ -880,7 +1040,7 @@ def gui():
         indices = np.where((I>=start_time) & (I<=end_time))[0]
         print("Number of files within time window: "+str(len(indices)))
 
-        self.imagefiles = np.asarray(infiles)[indices]
+        self.imagefiles = np.asarray(F)[indices]
         self.update()
         
     #==============================================================
