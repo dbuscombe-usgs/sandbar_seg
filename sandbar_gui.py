@@ -67,7 +67,6 @@ import tkMessageBox
 from ScrolledText import ScrolledText
 
 from scipy.misc import imresize, imread
-import pickle
 from scipy.signal import convolve2d
 from skimage.morphology import remove_small_holes, dilation, disk
 from skimage.measure import regionprops, label
@@ -510,9 +509,17 @@ def gui():
                   res = np.hstack((img2,bar,img,bar,output))
                   cv2.imwrite(filename+'_output.png',res)
                   print(" Result saved as image \n")
-
-                  pickle.dump( {'image':img, 'mask':output}, open( filename+"_out.p", "wb" ) )
-
+                  
+                  fig=plt.figure(); cs = plt.contour(output[:,:,0]>0, [0.5], colors='r'); 
+                  plt.close(); del fig
+                  p = cs.collections[0].get_paths()[0]
+                  v = p.vertices
+                  x = v[:,0]
+                  y = v[:,1]
+                  pickle.dump( {'contour_x':x, 'contour_y':y, 'img':img2}, open( filename+"_out.p", "wb" ) )
+                  #tmp = pickle.load(open('22mile.JPG_out.p', 'rb'))
+                  #plt.imshow(tmp['img']); plt.plot(tmp['contour_x'], tmp['contour_y'], 'r'); plt.show()
+                  
               elif k == ord('r'): # reset everything
                   print("resetting \n")
                   rect = (0,0,1,1)
