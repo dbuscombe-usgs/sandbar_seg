@@ -5,6 +5,8 @@ import numpy as np
 #from scipy.misc import imread
 import cv2
 
+#me = 'filfy'
+me = 'dbuscombe'
 
 cs2cs_args = "epsg:26949"
 
@@ -21,9 +23,9 @@ cs2cs_args = "epsg:26949"
 lon = -111.8476
 lat = 36.5159
 #infile = '22mile.JPG'
-infile = '/home/filfy/github_clones/processing/detect_clusters/sandbars/RC0307Rf_20121004_1333.jpg'
+infile = '/home/'+me+'/github_clones/processing/detect_clusters/sandbars/RC0307Rf_20121004_1333.jpg'
 
-xyz = np.genfromtxt('/home/filfy/github_clones/processing/detect_clusters/sandbars/030_121004_GRID.TXT', delimiter='\t')
+xyz = np.genfromtxt('/home/'+me+'/github_clones/processing/detect_clusters/sandbars/030_121004_GRID.TXT', delimiter='\t')
 
 
 img = cv2.imread(infile)

@@ -265,7 +265,7 @@ def finalise_mask(mask2, Athres):
         
        mask2 = (l>0).astype('uint8')
                  
-       mask2 = dilation(mask2, disk(3))
+       mask2 = dilation(mask2, disk(3)).astype('uint8')
        mask2 = remove_small_holes(mask2, min_size=10000).astype('uint8') 
     except:
        pass
