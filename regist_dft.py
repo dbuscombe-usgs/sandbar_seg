@@ -1,19 +1,24 @@
 
 
-from scipy.misc import imread, imresize
+from scipy.misc import imread
 import matplotlib.pyplot as plt
 import imreg_dft as ird
+from glob import glob
+from joblib import Parallel, delayed, cpu_count
+import scipy.misc
+import os
 
-im0 = imresize(imread(standard_image, flatten=True),.25)
+def doproc(im0, file):
+   im1 = imread(file, flatten=True)
+   t0, t1 = ird.translation(im0, im1)
+   im1 = imread(file)
+   timg = ird.transform_img(im1, tvec=t0)
+   scipy.misc.toimage(timg).save('/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf_regis/'+file.split(os.sep)[-1].split('.jpg')[0]+'_reg.jpg')
 
-im1 = imresize(imread(image_to_be_registered, flatten=True),.25)
+master = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf/RC0307Rf_20091012_1130.jpg'
 
-result = ird.similarity(im0, im1, numiter=3)
+im0 = imread(master, flatten=True)
 
-plt.subplot(211)
-plt.imshow(im1, cmap='gray')
+filenames = sorted(glob('/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf/*.jpg'))
 
-plt.subplot(212)
-plt.imshow(result['timg'], cmap='gray')
-
-plt.show()
+Parallel(n_jobs = cpu_count(), verbose=1)(delayed(doproc)(im0, file) for file in filenames)
