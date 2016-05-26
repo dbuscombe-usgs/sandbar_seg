@@ -4,9 +4,9 @@
 ## Author: Daniel Buscombe
 ## Project homepage: <https://github.com/dbuscombe-usgs/sandbar_seg>
 ##
-##This software is in the public domain because it contains materials that originally came from 
-##the United States Geological Survey, an agency of the United States Department of Interior. 
-##For more information, see the official USGS copyright policy at 
+##This software is in the public domain because it contains materials that originally came from
+##the United States Geological Survey, an agency of the United States Department of Interior.
+##For more information, see the official USGS copyright policy at
 ##http://www.usgs.gov/visual-id/credit_usgs.html#copyright
 ##
 ## This program is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 ===============================================================================
 Interactive Sandbar Segmentation using GrabCut algorithm.
 A Program by Daniel Buscombe, USGS
-April 2016
+April - May 2016
 
 README FIRST:
     Two windows will show up, one for input and one for output.
@@ -84,9 +84,11 @@ import matplotlib.dates as md
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 
+import warnings
+warnings.filterwarnings("ignore")
 
 # chaneg this for windows:
-rootfolder = '/home/dbuscombe/'
+rootfolder = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/'
 
 ##============================================
 def ani_frames(infiles):
@@ -97,7 +99,7 @@ def ani_frames(infiles):
     ax.get_yaxis().set_visible(False)
 
     im = ax.imshow(imresize(imread(infiles[0]),.25))
-    
+
     def init():
        im.set_data([[]])
        return im
@@ -118,8 +120,8 @@ def ani_frames(infiles):
        print('using ffmpeg to compile video')
        writer = animation.writers['ffmpeg'](fps=1)
     else:
-       print('using avconv to compile video')    
-       writer = animation.writers['avconv'](fps=1)    
+       print('using avconv to compile video')
+       writer = animation.writers['avconv'](fps=1)
 
     ani.save(infiles[0].split(os.sep)[-1].split('.')[0]+'_'+infiles[-1].split(os.sep)[-1].split('.')[0]+'.mp4',writer=writer,dpi=600)
     del fig
@@ -174,7 +176,7 @@ def ani_frames_withQdat(infiles, dat):
     ax.get_yaxis().set_visible(False)
 
     im = ax.imshow(imresize(imread(infiles[0]),.25), interpolation='nearest')
- 
+
     def init():
        im.set_data([[]])
        line.set_data([], [])
@@ -194,8 +196,8 @@ def ani_frames_withQdat(infiles, dat):
        print('using ffmpeg to compile video')
        writer = animation.writers['ffmpeg'](fps=1)
     else:
-       print('using avconv to compile video')    
-       writer = animation.writers['avconv'](fps=1)    
+       print('using avconv to compile video')
+       writer = animation.writers['avconv'](fps=1)
 
     ani.save(infiles[0].split(os.sep)[-1].split('.')[0]+'_'+infiles[-1].split(os.sep)[-1].split('.')[0]+'.mp4',writer=writer,dpi=600)
     del fig
@@ -228,14 +230,14 @@ def load_gagedata(nearest_gage):
 
 #======================================================
 def read_image(filename, scale):
-   img = imresize(cv2.imread(filename),scale) #resize image so quarter size 
-   imagehsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV) 
-   im = imresize(cv2.imread(filename,0),scale) #resize image so quarter size 
+   img = imresize(cv2.imread(filename),scale) #resize image so quarter size
+   imagehsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+   im = imresize(cv2.imread(filename,0),scale) #resize image so quarter size
    la = cv2.Laplacian(im,cv2.CV_64F)
    # get std and mean through stndard deviation, fast thru convolution
    m1, s1 = std_convoluted(im, .5)
    m2, s2 = std_convoluted(im, .25)
-   return img, imagehsv, im, la, m1, s1, m2, s2   
+   return img, imagehsv, im, la, m1, s1, m2, s2
 
 #=====================================================
 def clean_mask(mask, imagehsv, s1, s2, m1, m2):
@@ -243,7 +245,7 @@ def clean_mask(mask, imagehsv, s1, s2, m1, m2):
        mask[imagehsv[:,:,0]>np.percentile(imagehsv[:,:,0],75)] = 2
        mask[imagehsv[:,:,1]>np.percentile(imagehsv[:,:,1],75)] = 2
        mask[imagehsv[:,:,2]<np.percentile(imagehsv[:,:,2],50)] = 2
-      
+
        mask[s1>np.percentile(s1,75)] = 2
        mask[s2>np.percentile(s2,75)] = 2
        mask[la>np.percentile(la,75)] = 2
@@ -260,17 +262,17 @@ def finalise_mask(mask2, Athres):
     try:
        l = label(mask2)
        for region in regionprops(l):
-          if (region.area<Athres): 
+          if (region.area<Athres):
              l[l==region.label] = 0
-        
+
        mask2 = (l>0).astype('uint8')
-                 
+
        mask2 = dilation(mask2, disk(3)).astype('uint8')
-       mask2 = remove_small_holes(mask2, min_size=10000).astype('uint8') 
+       mask2 = remove_small_holes(mask2, min_size=10000).astype('uint8')
     except:
        pass
 
-    return mask2 
+    return mask2
 
 ##======================================================
 def std_convoluted(image, N):
@@ -354,7 +356,7 @@ def gui():
     self = master.master  # short-cut to top-level window
     master.pack()  # pack the Frame into root, defaults to side=TOP
     self.title('Sandbar Image Processing Tool')  # name the window
-   	       
+
     # create notebook
     demoPanel = Tkinter.Frame(master, name='demo')  # create a new frame slaved to master
     demoPanel.pack()  # pack the Frame into root
@@ -395,7 +397,7 @@ def gui():
        T.tag_configure('bold_italics', font=('Arial', 12, 'bold', 'italic'))
        T.tag_configure('big', font=('Verdana', 20, 'bold'))
        T.tag_configure('color', foreground='#476042', font=('Tempus Sans ITC', 12, 'bold'))
-       T.insert(END, __doc__)  
+       T.insert(END, __doc__)
 
     MSG1_btn = Tkinter.Button(read_frame, text = "Instructions", command = hello1_alt)
     MSG1_btn.grid(row=0, column=0, pady=(2,4))
@@ -450,16 +452,21 @@ def gui():
         self.imagefiles = askopenfilename(filetypes = [ ("Image Files", ("*.jpg", "*.JPG", '*.jpeg')), ("TIF",('*.tif', '*.tiff'))] , multiple=True)
 
         for k in xrange(len(self.imagefiles)):
+           print('image '+str(k)+' of '+str(len(self.imagefiles)-1))
            print(self.imagefiles[k])
         self.folder = os.path.dirname(self.imagefiles[0])
-           
-        self.update() 
+
+        self.update()
 
     #=======================
     def _proc(self):
        global img,img2,drawing,value,mask,rectangle,rect,rect_or_mask,ix,iy,rect_over
+       counter = 0
        for filename in self.imagefiles:
           print('Processing ' + filename)
+          print('image '+str(counter)+' of '+str(len(self.imagefiles)-1))
+          counter = counter+1
+
           BLUE = [255,0,0]        # rectangle color
           BLACK = [0,0,0]         # sure BG
           WHITE = [255,255,255]   # sure FG
@@ -475,24 +482,26 @@ def gui():
           thickness = 2           # brush thickness
           Athres = 1000
           scale = 0.25
-          
+
           img, imagehsv, im, la, m1, s1, m2, s2 = read_image(filename, scale)
           img2 = img.copy()                               # a copy of original image
           mask = np.zeros(img.shape[:2],dtype = np.uint8) # mask initialized to PR_BG
           output = np.zeros(img.shape,np.uint8)           # output image to be shown
-          
+
           # input and output windows
           cv2.namedWindow('output', cv2.WINDOW_AUTOSIZE)
           cv2.namedWindow('input', cv2.WINDOW_AUTOSIZE)
+          cv2.namedWindow(filename, cv2.WINDOW_AUTOSIZE)
           cv2.setMouseCallback('input',onmouse)
           cv2.moveWindow('input',img.shape[1]+10,90)
-          
+
           print(" Instructions: \n")
           print(" Draw a rectangle around the object using right mouse button \n")
 
           while(1):
 
               cv2.imshow('output',output)
+              cv2.imshow(filename,img)
               cv2.imshow('input',img)
               k = 0xFF & cv2.waitKey(1)
               # key bindings
@@ -509,8 +518,8 @@ def gui():
                   res = np.hstack((img2,bar,img,bar,output))
                   cv2.imwrite(filename+'_output.png',res)
                   print(" Result saved as image \n")
-                  
-                  fig=plt.figure(); cs = plt.contour(output[:,:,0]>0, [0.5], colors='r'); 
+
+                  fig=plt.figure(); cs = plt.contour(output[:,:,0]>0, [0.5], colors='r');
                   plt.close(); del fig
                   p = cs.collections[0].get_paths()[0]
                   v = p.vertices
@@ -519,7 +528,9 @@ def gui():
                   pickle.dump( {'contour_x':x, 'contour_y':y, 'img':img2}, open( filename+"_out.p", "wb" ) )
                   #tmp = pickle.load(open('22mile.JPG_out.p', 'rb'))
                   #plt.imshow(tmp['img']); plt.plot(tmp['contour_x'], tmp['contour_y'], 'r'); plt.show()
-                  
+                  break
+                  cv2.destroyAllWindows()
+
               elif k == ord('r'): # reset everything
                   print("resetting \n")
                   rect = (0,0,1,1)
@@ -538,9 +549,9 @@ def gui():
                       bgdmodel = np.zeros((1,65),np.float64)
                       fgdmodel = np.zeros((1,65),np.float64)
                       cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,1,cv2.GC_INIT_WITH_RECT)
-                
+
                       mask = clean_mask(mask, imagehsv, s1, s2, m1, m2)
-                           
+
                       rect_or_mask = 1
                   elif rect_or_mask == 1:         # grabcut with mask
                       bgdmodel = np.zeros((1,65),np.float64)
@@ -548,7 +559,7 @@ def gui():
                       cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,1,cv2.GC_INIT_WITH_MASK)
 
               mask2 = np.where((mask==1) + (mask==3),255,0).astype('uint8')
-              mask2 = finalise_mask(mask2, Athres) 
+              mask2 = finalise_mask(mask2, Athres)
               output = cv2.bitwise_and(img2,img2,mask=mask2)
 
           cv2.destroyAllWindows()
@@ -692,8 +703,8 @@ def gui():
     qdestroy_btn.grid(row=5, column=1, pady=(2,4))
     qdestroy_btn.configure(background='thistle3', fg="black")
 
-    #=======================   
-    def _qstart(start):	       
+    #=======================
+    def _qstart(start):
         self.startdate = start.selection
         print("======================")
         print("Start Date:")
@@ -701,8 +712,8 @@ def gui():
         print("======================")
         self.update()
 
-    #=======================   
-    def _qend(end):	   
+    #=======================
+    def _qend(end):
         print("======================")
         print("End Date:")
         self.enddate = end.selection
@@ -710,22 +721,22 @@ def gui():
         print("======================")
         self.update()
 
-    #=======================   
+    #=======================
     def _SetSitePick(master, v):
        sitelist = np.genfromtxt('sites.txt', dtype=str)
-     
+
        self.sitepick= sitelist[v]
        print("site selected: "+self.sitepick)
-       self.update()          
+       self.update()
 
     #=======================
     def _qquit(master):
         cv2.destroyAllWindows()
         master.destroy()
 
-    #=======================   
+    #=======================
     def _SetTime(v):
-           
+
        #self.sitepick= v
        if v==1:
           print("All times selected")
@@ -774,7 +785,7 @@ def gui():
           print("Time selected: 18:00 -- 19:00")
           self.idealtime = '18:00'
 
-       self.update()  
+       self.update()
 
     #=======================
     def _qfind():
@@ -801,10 +812,10 @@ def gui():
         # get unix timestamps rfom the user selected start and end dates
         start_time = toTimestamp(self.startdate)+ 6 * 60 * 60
         end_time = toTimestamp(self.enddate)+ 6 * 60 * 60
- 
+
         if self.idealtime != 'all':
            idealtime = int(self.idealtime[:2])
-           
+
         # get unix timestamps and discharges of every file
         F=[]
         for filename in infiles:
@@ -819,7 +830,7 @@ def gui():
                   F.append(filename)
             else:
                F.append(filename)
-          
+
         # get unix timestamps and discharges of every file
         I = []; Q = []
         for filename in F: #infiles:
@@ -838,7 +849,7 @@ def gui():
         print("Number of files within time window and near specified discharge: "+str(len(indices)))
 
         self.imagefiles = np.asarray(F)[indices] #infiles
-        self.update() 
+        self.update()
 
     #==============================================================
     #==============================================================
@@ -971,8 +982,8 @@ def gui():
     tdestroy_btn.grid(row=5, column=1, pady=(2,4))
     tdestroy_btn.configure(background='thistle3', fg="black")
 
-    #=======================   
-    def _tstart(tstart):	       
+    #=======================
+    def _tstart(tstart):
         self.startdate = tstart.selection
         print("======================")
         print("Start Date:")
@@ -980,8 +991,8 @@ def gui():
         print("======================")
         self.update()
 
-    #=======================   
-    def _tend(tend):	   
+    #=======================
+    def _tend(tend):
         print("======================")
         print("End Date:")
         self.enddate = tend.selection
@@ -1008,7 +1019,7 @@ def gui():
 
         if self.idealtime != 'all':
            idealtime = int(self.idealtime[:2])
-           
+
         # get unix timestamps and discharges of every file
         F=[]
         for filename in infiles:
@@ -1049,7 +1060,7 @@ def gui():
 
         self.imagefiles = np.asarray(F)[indices]
         self.update()
-        
+
     #==============================================================
     #==============================================================
     #========END 3rd tab
@@ -1060,7 +1071,7 @@ def gui():
 # =========================================================
 # =========================================================
 if __name__ == '__main__':
-   
+
    gui()
 
 
@@ -1081,11 +1092,11 @@ if __name__ == '__main__':
 #        self.qfolder = os.path.dirname(self.qimagefiles[0])
 
 #        #self.q_son_btn.configure(fg='thistle3', background="black")
-#        
-#        self.update() 
+#
+#        self.update()
 
-#	#=======================   
-#	def _qstart(start):	       
+#	#=======================
+#	def _qstart(start):
 #           self.startdate = start.selection
 #           print("======================")
 #           print("Start Date:")
@@ -1093,8 +1104,8 @@ if __name__ == '__main__':
 #           print("======================")
 #           self.update()
 
-#	#=======================   
-#	def _qend(end):	   
+#	#=======================
+#	def _qend(end):
 #           print("======================")
 #           print("End Date:")
 #           self.enddate = end.selection
@@ -1102,15 +1113,15 @@ if __name__ == '__main__':
 #           print("======================")
 #           self.update()
 
-#	#=======================   
+#	#=======================
 #	def _SetSitePick(master, v):
 #           sitelist = np.genfromtxt('sites.txt', dtype=str)
-#     
+#
 #	   self.sitepick= sitelist[v]
 #           print("site selected: "+self.sitepick)
 
 #	   #self.bb.configure(fg='thistle3', background="black")
-#	   self.update()          
+#	   self.update()
 
 #	#=======================
 #	def _qquit(master):
@@ -1142,7 +1153,7 @@ if __name__ == '__main__':
 #           #end_time = toTimestamp(DT.datetime.strptime(self.enddate, '%Y-%m-%d %H:%M:%S'))+ 6 * 60 * 60
 #           start_time = toTimestamp(self.startdate)+ 6 * 60 * 60
 #           end_time = toTimestamp(self.enddate)+ 6 * 60 * 60
-#           
+#
 #           # get unix timestamps and discharges of every file
 #           I = []; Q = []
 #           for filename in infiles:
@@ -1161,7 +1172,7 @@ if __name__ == '__main__':
 #           print("Number of files within time window and near specified discharge: "+str(len(indices)))
 
 #           self.qimagefiles = np.asarray(infiles)[indices]
-#	   self.update() 
+#	   self.update()
 
 #	#=======================
 #	def _qget_images(): #(master, v):
@@ -1170,12 +1181,12 @@ if __name__ == '__main__':
 #	    for k in xrange(len(self.qimagefiles)):
 #	       print(self.qimagefiles[k])
 #	    self.qfolder = os.path.dirname(self.qimagefiles[0])
-#	    
+#
 #	    #self.son_btn.configure(fg='thistle3', background="black")
 
 #	    self.q_son_btn.configure(fg='thistle3', background="black")
-#	    
-#	    self.update() 
+#
+#	    self.update()
 
                #img = imresize(cv2.imread(filename),scale) #resize image so quarter size
                #imagehsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -1183,4 +1194,4 @@ if __name__ == '__main__':
                #la = cv2.Laplacian(im,cv2.CV_64F)
                # get std and mean through stndard deviation, fast thru convolution
                #m1, s1 = std_convoluted(im, .5)
-               #m2, s2 = std_convoluted(im, .25)  
+               #m2, s2 = std_convoluted(im, .25)

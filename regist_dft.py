@@ -7,11 +7,17 @@ from glob import glob
 from joblib import Parallel, delayed, cpu_count
 import scipy.misc
 import os
+import numpy as np
 
 def doproc(im0, file):
    im1 = imread(file, flatten=True)
    t0, t1 = ird.translation(im0, im1)
    im1 = imread(file)
+   if np.abs(t0[0])>50:
+      to[0] = np.sign(t0[0])*50
+   if np.abs(t0[1])>100:
+      to[1] = np.sign(t0[1])*100
+
    timg = ird.transform_img(im1, tvec=t0)
    scipy.misc.toimage(timg).save('/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf_regis/'+file.split(os.sep)[-1].split('.jpg')[0]+'_reg.jpg')
 
@@ -20,5 +26,9 @@ master = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf/RC030
 im0 = imread(master, flatten=True)
 
 filenames = sorted(glob('/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf/*.jpg'))
+
+Parallel(n_jobs = cpu_count(), verbose=1)(delayed(doproc)(im0, file) for file in filenames)
+
+filenames = sorted(glob('/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf/*.JPG'))
 
 Parallel(n_jobs = cpu_count(), verbose=1)(delayed(doproc)(im0, file) for file in filenames)
