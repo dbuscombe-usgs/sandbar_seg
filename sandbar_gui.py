@@ -515,8 +515,8 @@ def gui():
                   value = DRAW_FG
               elif k == ord('s'): # save image
                   bar = np.zeros((img.shape[0],5,3),np.uint8)
-                  res = np.hstack((img2,bar,img,bar,output))
-                  cv2.imwrite(filename+'_output.png',res)
+                  #res = np.hstack((img2,bar,img,bar,output))
+                  cv2.imwrite(filename+'_output.png',img) #res)
                   print(" Result saved as image \n")
 
                   fig=plt.figure(); cs = plt.contour(output[:,:,0]>0, [0.5], colors='r');
