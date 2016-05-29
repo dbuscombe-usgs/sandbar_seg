@@ -1,5 +1,3 @@
-
-
 from scipy.misc import imread
 import matplotlib.pyplot as plt
 import imreg_dft as ird
