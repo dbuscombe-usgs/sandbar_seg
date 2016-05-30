@@ -52,35 +52,36 @@ xyz = np.genfromtxt('RC0307Rf_surveydata/30_150925_GRID.TXT', delimiter=' ')
 img = cv2.imread(infile)
 img = img[500:1500,:y,:d]
 
-# plot gcps on oblique, then rectified, images
-fig = plt.figure(frameon=False)
-plt.subplot(121)
-plt.imshow(img)
 
-plt.subplot(122)
-plt.imshow(bkimg, extent = imextent)
-plt.plot(campos[1], campos[0],'ro')
-plt.plot(xyz[:,1],xyz[:,2],'.', markersize=2)
+## plot gcps on oblique, then rectified, images
+#fig = plt.figure(frameon=False)
+#plt.subplot(121)
+#plt.imshow(img)
 
-plt.xlim(campos[1]-50, campos[1]+50)
-plt.ylim(campos[0]-75, campos[0]+125)
+#plt.subplot(122)
+#plt.imshow(bkimg, extent = imextent)
+#plt.plot(campos[1], campos[0],'ro')
+#plt.plot(xyz[:,1],xyz[:,2],'.', markersize=2)
 
-pts = plt.ginput(n=100, timeout=1000)
-plt.close()
+#plt.xlim(campos[1]-50, campos[1]+50)
+#plt.ylim(campos[0]-75, campos[0]+125)
 
-pts = np.asarray(pts)
+#pts = plt.ginput(n=100, timeout=1000)
+#plt.close()
+
+#pts = np.asarray(pts)
 
 
-#pts1 = np.array([[  1.58298603e+02,   5.58246304e+02],
-#       [  8.33881099e+02,   8.51977824e+02],
-#       [  3.08092723e+03,   9.10724128e+02],
-#       [  1.14964248e+03,   3.15917800e+02],
-#       [  2.77985242e+03,   6.46365760e+02],
-#       [  2.19514684e+05,   6.11702525e+05],
-#       [  2.19575534e+05,   6.11772906e+05],
-#       [  2.19593496e+05,   6.11857950e+05],
-#       [  2.19516883e+05,   6.11769241e+05],
-#       [  2.19566370e+05,   6.11851352e+05]])
+pts1 = np.array([[  1.58298603e+02,   5.58246304e+02],
+       [  8.33881099e+02,   8.51977824e+02],
+       [  3.08092723e+03,   9.10724128e+02],
+       [  1.14964248e+03,   3.15917800e+02],
+       [  2.77985242e+03,   6.46365760e+02],
+       [  2.19514684e+05,   6.11702525e+05],
+       [  2.19575534e+05,   6.11772906e+05],
+       [  2.19593496e+05,   6.11857950e+05],
+       [  2.19516883e+05,   6.11769241e+05],
+       [  2.19566370e+05,   6.11851352e+05]])
 
 #pts2 = np.array([[  1.58298603e+02,   5.36216440e+02],
 #       [  9.36687131e+02,   7.78544944e+02],
@@ -141,17 +142,17 @@ pts = np.asarray(pts)
 #       [  2.19593496e+05,   6.11859050e+05],
 #       [  2.19516883e+05,   6.11769241e+05]])
 
-pts7 = np.array([[  1.50955315e+02,   5.58246304e+02],
-       [  1.14229920e+03,   3.23261088e+02],
-       [  2.23644911e+03,   6.09649320e+02],
-       [  3.11030038e+03,   9.32753992e+02],
-       [  2.19514317e+05,   6.11702158e+05],
-       [  2.19516883e+05,   6.11769607e+05],
-       [  2.19557939e+05,   6.11831557e+05],
-       [  2.19593130e+05,   6.11858683e+05]])
+#pts7 = np.array([[  1.50955315e+02,   5.58246304e+02],
+#       [  1.14229920e+03,   3.23261088e+02],
+#       [  2.23644911e+03,   6.09649320e+02],
+#       [  3.11030038e+03,   9.32753992e+02],
+#       [  2.19514317e+05,   6.11702158e+05],
+#       [  2.19516883e+05,   6.11769607e+05],
+#       [  2.19557939e+05,   6.11831557e+05],
+#       [  2.19593130e+05,   6.11858683e+05]])
 
 
-pts = pts7
+pts = pts1
 
 impts = pts[:len(pts)/2]
 mappts = pts[len(pts)/2:]
@@ -170,12 +171,13 @@ homo = cv2.findHomography(impts[usepts], pts2[usepts])
 
 dst = cv2.warpPerspective(img,homo[0],tuple(np.ceil(np.max(pts2, axis=0)*1.2).astype('int')))
 
-pickle.dump( {'trans':homo[0], 'dsize':tuple(np.ceil(np.max(pts2, axis=0)*1.2).astype('int')), 'impts':impts, 'mappts':pts2}, open( "RC0307Rf_homo_trans7.p", "wb" ) )
-
 rows,cols,ch = dst.shape
 
 N_axis = np.linspace(minpts2[1], minpts2[1]+rows, rows)
 E_axis = np.linspace(minpts2[0], minpts2[0]+cols, cols)
+
+pickle.dump( {'trans':homo[0], 'dsize':tuple(np.ceil(np.max(pts2, axis=0)*1.2).astype('int')), 'impts':impts, 'mappts':mappts}, open( "RC0307Rf_homo_trans1.p", "wb" ) )
+
 
 plt.figure()
 plt.subplot(221)
@@ -208,6 +210,14 @@ plt.ylim(campos[0]-75, campos[0]+125)
 plt.pcolormesh(E_axis, N_axis, dst[:,:,0], cmap='gray')#, alpha=0.5)
 #plt.show()
 
-plt.savefig('RC0307Rf_rect_image_ex7.png')
+plt.savefig('RC0307Rf_rect_image_ex1.png')
 plt.close()
+
+
+
+
+
+
+
+
 
