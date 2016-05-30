@@ -32,7 +32,7 @@ infile = 'RC0651R_surveydata/RC0651R_20130927_1201_reg.jpg'
 xyz = np.genfromtxt('RC0651R_surveydata/65_130927_GRID.TXT', delimiter=' ')
 
 ###3
-infile = 'RC0651R_surveydata/RC0651R_20140930_1202_reg.jpg'
+infile = 'RC0651R_surveydata/RC0651R_20140930_1202.JPG_reg.jpg'
 xyz = np.genfromtxt('RC0651R_surveydata/65_140930_GRID.TXT', delimiter=' ')
 
 
@@ -62,42 +62,46 @@ pts = np.asarray(pts)
 
 
 
-pts1 = np.array([[  3.46927016e+02,   3.44823589e+02],
-       [  4.75427419e+02,   5.58990927e+02],
-       [  2.55523024e+03,   7.06528427e+02],
-       [  3.00736129e+03,   6.49417137e+02],
+pts1 = np.array([[  3.32649194e+02,   3.49582863e+02],
+       [  4.84945968e+02,   5.58990927e+02],
+       [  2.54571169e+03,   7.11287702e+02],
+       [  2.99784274e+03,   6.58935685e+02],
        [  2.30298871e+03,   4.16212702e+02],
-       [  2.22362054e+05,   5.71005374e+05],
-       [  2.22402759e+05,   5.71066912e+05],
-       [  2.22385772e+05,   5.71170438e+05],
-       [  2.22384169e+05,   5.71188386e+05],
-       [  2.22362695e+05,   5.71154733e+05]])
-
-pts2 = np.array([[  2.99334274e+02,   3.28166129e+02],
-       [  2.24587742e+03,   4.23351613e+02],
-       [  2.69800847e+03,   6.23241129e+02],
-       [  2.49811895e+03,   6.94630242e+02],
-       [  2.92645363e+03,   6.66074597e+02],
-       [  2.22360693e+05,   5.71000224e+05],
-       [  2.22362012e+05,   5.71154496e+05],
-       [  2.22372231e+05,   5.71168341e+05],
-       [  2.22385746e+05,   5.71169989e+05],
-       [  2.22383439e+05,   5.71189109e+05]])
+       [  3.11682460e+03,   3.82897782e+02],
+       [  2.22366861e+05,   5.71006976e+05],
+       [  2.22403079e+05,   5.71067553e+05],
+       [  2.22385451e+05,   5.71170438e+05],
+       [  2.22384169e+05,   5.71189348e+05],
+       [  2.22361413e+05,   5.71154412e+05],
+       [  2.22372310e+05,   5.71195758e+05]])
 
 
-pts3 = np.array([[  4.84945968e+02,   3.28166129e+02],
-       [  2.20780323e+03,   4.94740726e+02],
-       [  2.42672984e+03,   4.23351613e+02],
-       [  2.67421210e+03,   7.04148790e+02],
-       [  3.11682460e+03,   6.70833871e+02],
-       [  2.22360034e+05,   5.71000883e+05],
-       [  2.22366297e+05,   5.71150541e+05],
-       [  2.22362012e+05,   5.71154826e+05],
-       [  2.22385416e+05,   5.71169660e+05],
-       [  2.22383439e+05,   5.71188449e+05]])
+pts2 = np.array([[  3.51686290e+02,   3.28166129e+02],
+       [  2.55047097e+03,   6.89870968e+02],
+       [  2.97404637e+03,   6.75593145e+02],
+       [  3.10730605e+03,   4.28110887e+02],
+       [  2.31250726e+03,   4.23351613e+02],
+       [  2.22362012e+05,   5.71000883e+05],
+       [  2.22385416e+05,   5.71170649e+05],
+       [  2.22383768e+05,   5.71189768e+05],
+       [  2.22371571e+05,   5.71196361e+05],
+       [  2.22362671e+05,   5.71154496e+05]])
 
 
-pts = pts3.copy()
+
+pts3 = np.array([[  3.00260202e+03,   6.75593145e+02],
+       [  2.58854516e+03,   6.99389516e+02],
+       [  2.32202581e+03,   4.28110887e+02],
+       [  3.89760484e+02,   3.28166129e+02],
+       [  2.71704556e+03,   6.28000403e+02],
+       [  2.22383439e+05,   5.71189109e+05],
+       [  2.22384757e+05,   5.71170649e+05],
+       [  2.22362671e+05,   5.71154826e+05],
+       [  2.22360693e+05,   5.71006158e+05],
+       [  2.22371901e+05,   5.71165374e+05]])
+
+
+pts = pts2.copy()
 
 
 impts = pts[:len(pts)/2]
@@ -115,14 +119,14 @@ usepts = np.arange(len(impts)) # use all points
 # # fuind the perspective transformation between the 2 planes
 homo = cv2.findHomography(impts[usepts], pts2[usepts])
 
-dst = cv2.warpPerspective(img,homo[0],tuple(np.ceil(np.max(pts2, axis=0)*1.5).astype('int')))
+dst = cv2.warpPerspective(img,homo[0],tuple(np.ceil(np.max(pts2, axis=0)).astype('int')))
 
-pickle.dump( {'trans':homo[0], 'dsize':tuple(np.ceil(np.max(pts2, axis=0)*1.5).astype('int')), 'impts':impts, 'mappts':mappts}, open( "RC0651R_homo_trans3.p", "wb" ) )
+pickle.dump( {'trans':homo[0], 'dsize':tuple(np.ceil(np.max(pts2, axis=0)).astype('int')), 'impts':impts, 'mappts':mappts}, open( "RC0651R_homo_trans2.p", "wb" ) )
 
 rows,cols,ch = dst.shape
 
-N_axis = np.linspace(minpts2[1], minpts2[1]+rows, rows)-1.5
-E_axis = np.linspace(minpts2[0], minpts2[0]+cols, cols)-1.5
+N_axis = np.linspace(minpts2[1], minpts2[1]+rows, rows)
+E_axis = np.linspace(minpts2[0], minpts2[0]+cols, cols)
 
 plt.figure()
 plt.subplot(221)
@@ -156,7 +160,7 @@ plt.ylim(campos[0]-350, campos[0]-100)
 plt.pcolormesh(E_axis, N_axis, dst[:,:,0], cmap='gray')#, alpha=0.5)
 #plt.show()
 
-plt.savefig('RC0651R_rect_image_ex3.png')
+plt.savefig('RC0651R_rect_image_ex2.png')
 plt.close()
 
 

@@ -46,12 +46,11 @@ campos = [639366.86, 235900.411]
 dat1 =  pickle.load( open( "RC0089L_homo_trans1.p", "rb" ) )
 dat2 =  pickle.load( open( "RC0089L_homo_trans2.p", "rb" ) )
 dat3 =  pickle.load( open( "RC0089L_homo_trans3.p", "rb" ) )
-dat4 =  pickle.load( open( "RC0089L_homo_trans4.p", "rb" ) )
 
 ##merged
 
-impts = np.vstack((dat1['impts'], dat2['impts'], dat3['impts'], dat4['impts']))
-mappts = np.vstack((dat1['mappts'], dat2['mappts'], dat3['mappts'], dat4['mappts']))
+impts = np.vstack((dat1['impts'], dat2['impts'], dat3['impts']))
+mappts = np.vstack((dat1['mappts'], dat2['mappts'], dat3['mappts']))
 
 pts2 = np.vstack((mappts[:,0],mappts[:,1])).T
 
@@ -72,31 +71,27 @@ infiles  = []
 xyz = []
 
 #1
-infiles.append('RC0089L_surveydata/RC0089L_20121004_0959_res.jpg')
+infiles.append('RC0089L_surveydata/RC0089L_20121004_0959_reg.jpg')
 xyz.append(np.genfromtxt('RC0089L_surveydata/9_121003_GRID.TXT', delimiter=' '))
 
 #2
-infiles.append('RC0089L_surveydata/RC0089L_20121127_1556_res.jpg')
+infiles.append('RC0089L_surveydata/RC0089L_20121127_1556_reg.jpg')
 xyz.append(np.genfromtxt('RC0089L_surveydata/9_121127_GRID.TXT', delimiter=' '))
 
 #3
-infiles.append('RC0089L_surveydata/RC0089L_20130921_1553_res.jpg')
+infiles.append('RC0089L_surveydata/RC0089L_20130921_1553_reg.jpg')
 xyz.append(np.genfromtxt('RC0089L_surveydata/9_130921_GRID.TXT', delimiter=' '))
 
-#4
-infiles.append('RC0089L_surveydata/RC0089L_20140924_0742.JPG_res.jpg')
-xyz.append(np.genfromtxt('RC0089L_surveydata/9_140924_GRID.TXT', delimiter=' '))
 
+times = ['Oct 4, 2012, 09:59', 'Nov 27, 2012, 15:56', 'Sept 21, 2013, 15:53']
 
-
-times = ['Oct 4, 2012, 09:59', 'Nov 27, 2012, 15:56', 'Sept 21, 2013, 15:53', 'Sept 24, 2014, 07:42']
-
-## rect 1, image 1 - 4
-for k in range(4):
+## rect 1, image 1 - 3
+for k in range(3):
    img = cv2.imread(infiles[k])
    img = img[1200:2000,:y,:d]
 
    N_axis, E_axis, dst = dotrans(img,homo[0],dsize,mappts)
+   #N_axis, E_axis, dst = dotrans(img,dat2['trans'],dat2['dsize'],dat2['mappts'])
 
    rectim = dst[:,:,0].astype('float32')
    rectim[rectim==0] = np.nan

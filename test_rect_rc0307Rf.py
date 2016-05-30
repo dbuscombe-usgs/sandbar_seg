@@ -20,8 +20,8 @@ def dotrans(img,trans,size,mappts):
 
    rows,cols,ch = dst.shape
 
-   N_axis = np.linspace(minpts2[1], minpts2[1]+rows, rows)-2
-   E_axis = np.linspace(minpts2[0], minpts2[0]+cols, cols)-2
+   N_axis = np.linspace(minpts2[1], minpts2[1]+rows, rows)
+   E_axis = np.linspace(minpts2[0], minpts2[0]+cols, cols)
 
    return N_axis, E_axis, dst
 
@@ -43,12 +43,12 @@ imextent = [ pos[4], pos[4]+y*pos[0], pos[5]-x*pos[0], pos[5] ]
 
 ## test!!
 
-dat1 =  pickle.load( open( "RC0307Rf_homo_trans1.p", "rb" ) )
-dat2 =  pickle.load( open( "RC0307Rf_homo_trans2.p", "rb" ) )
-dat3 =  pickle.load( open( "RC0307Rf_homo_trans3.p", "rb" ) )
-dat4 =  pickle.load( open( "RC0307Rf_homo_trans4.p", "rb" ) )
-dat5 =  pickle.load( open( "RC0307Rf_homo_trans5.p", "rb" ) )
-dat6 =  pickle.load( open( "RC0307Rf_homo_trans6.p", "rb" ) )
+dat1 =  pickle.load( open( "RC0307Rf_surveydata/RC0307Rf_homo_trans1.p", "rb" ) )
+dat2 =  pickle.load( open( "RC0307Rf_surveydata/RC0307Rf_homo_trans2.p", "rb" ) )
+dat3 =  pickle.load( open( "RC0307Rf_surveydata/RC0307Rf_homo_trans3.p", "rb" ) )
+dat4 =  pickle.load( open( "RC0307Rf_surveydata/RC0307Rf_homo_trans4.p", "rb" ) )
+dat5 =  pickle.load( open( "RC0307Rf_surveydata/RC0307Rf_homo_trans5.p", "rb" ) )
+dat6 =  pickle.load( open( "RC0307Rf_surveydata/RC0307Rf_homo_trans6.p", "rb" ) )
 #dat7 =  pickle.load( open( "RC0307Rf_homo_trans7.p", "rb" ) )
 
 
@@ -67,7 +67,7 @@ pts2 =  pts2 - minpts2
 
 homo = cv2.findHomography(impts, pts2)
 
-dsize = tuple(np.ceil(np.max(pts2, axis=0)*2).astype('int'))
+dsize = tuple(np.ceil(np.max(pts2, axis=0)).astype('int'))
 
 pickle.dump( {'trans':homo[0], 'dsize':dsize, 'impts':impts, 'mappts':mappts}, open( "RC0307Rf_homo_mergedtrans.p", "wb" ) )
 
