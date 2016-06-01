@@ -797,6 +797,8 @@ def gui():
         for filetypes in types:
            infiles.extend(glob(imagefolder+filetypes))
 
+        infiles = set(infiles)
+
         print("Number of files to search: "+str(len(infiles)))
 
         # determine the nearest gage and load the appropriate discharge data
@@ -1010,6 +1012,8 @@ def gui():
         infiles = []
         for filetypes in types:
            infiles.extend(glob(imagefolder+filetypes))
+
+        infiles = set(infiles)
 
         print("Number of files to search: "+str(len(infiles)))
 
