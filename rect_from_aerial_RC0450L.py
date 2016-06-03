@@ -13,43 +13,58 @@ cs2cs_args = "epsg:26949"
 trans =  pyproj.Proj(init=cs2cs_args)
 #lon, lat = trans(e,n, inverse=True)
 
-bkimg = imread('tifs/RM.tif')
+
+bkimg = imread('tifs/Seg_F_06mb.tif')
 x,y,d = bkimg.shape
-pos = np.genfromtxt('tifs/RM.tfw')
+pos = np.genfromtxt('tifs/Seg_F_06mb.tfw')
 imextent = [ pos[4], pos[4]+y*pos[0], pos[5]-x*pos[0], pos[5] ]
 
 
-36.38395081
--111.8583715
 #45 mile
-campos = [622474.549, 227515.424]
+campos = [597308.841, 218588.09]
 
 ###1
 infile = 'RC0450L_surveydata/RC0450L_20091014_1334.jpg'
 xyz = np.genfromtxt('RC0450L_surveydata/45_091014_Grid.TXT', delimiter=' ')
 
 ####2
+infile = 'RC0450L_surveydata/RC0450L_20111009_1349.jpg'
+xyz = np.genfromtxt('RC0450L_surveydata/45_111009_GRID.TXT', delimiter=' ')
 
 ###3
+infile = 'RC0450L_surveydata/RC0450L_20121007_1358.jpg'
+xyz = np.genfromtxt('RC0450L_surveydata/45_121007_GRID.TXT', delimiter=' ')
+
+###4
+infile = 'RC0450L_surveydata/RC0450L_20130925_1359.JPG'
+xyz = np.genfromtxt('RC0450L_surveydata/45_091014_Grid.TXT', delimiter=' ')
+
+####5
+infile = 'RC0450L_surveydata/RC0450L_20140928_1359.JPG'
+xyz = np.genfromtxt('RC0450L_surveydata/45_140928_GRID.TXT', delimiter=' ')
+
+###6
+infile = 'RC0450L_surveydata/RC0450L_20150927_0941.JPG'
+xyz = np.genfromtxt('RC0450L_surveydata/45_150927_GRID.TXT', delimiter=' ')
 
 
 img = cv2.imread(infile)
-img = img[500:1500,:y,:d]
+img = img[500:1500,1500:y,:d]
 
 
 
-## plot gcps on obliue, then rectified, images
-#fig = plt.figure(frameon=False)
-#plt.subplot(121)
-#plt.imshow(img)
+# plot gcps on obliue, then rectified, images
+fig = plt.figure(frameon=False)
+plt.subplot(121)
+plt.imshow(img)
 
-#plt.subplot(122)
-#plt.imshow(bkimg, extent = imextent)
-#plt.plot(campos[1], campos[0],'ro')
-#plt.plot(xyz[:,1],xyz[:,2],'.', markersize=2)
+plt.subplot(122)
+plt.imshow(bkimg, extent = imextent)
+plt.plot(campos[1], campos[0],'ro')
+plt.plot(xyz[:,1],xyz[:,2],'.', markersize=2)
 
-#plt.xlim(campos[1]-200, campos[1]+10)
-#plt.ylim(campos[0]-100, campos[0]+150)
+plt.xlim(campos[1]-50, campos[1]+100)
+plt.ylim(campos[0]-225, campos[0]-120)
 
 #pts = plt.ginput(n=100, timeout=1000)
 #plt.close()
