@@ -4,14 +4,13 @@ http://www.cs.ubc.ca/~lowe/keypoints/
 adapted from the matlab code examples.
 
 Initial code by Jan Erik Solem, 2009-01-30
+adapted by Daniel Buscombe, June 2016
 """
 
 import os
-from scipy import *
-from numpy import *
 from scipy.ndimage import *
-import pylab
-
+import numpy as np
+from scipy.linalg import norm
 
 def process_image(imagename, resultname):
     """ process an image and save the results in a .key ascii file"""
@@ -36,8 +35,8 @@ def read_features_from_file(filename):
     if featlength != 128: #should be 128 in this case
         raise RuntimeError, 'Keypoint descriptor length invalid (should be 128).' 
         
-    locs = zeros((num, 4))
-    descriptors = zeros((num, featlength));        
+    locs = np.zeros((num, 4))
+    descriptors = np.zeros((num, featlength));        
 
     #parse the .key file
     e =f.read().split() #split the rest into individual elements
@@ -55,7 +54,7 @@ def read_features_from_file(filename):
         pos += 128
         
         #normalize each input vector to unit length
-        descriptors[point] = descriptors[point] / linalg.norm(descriptors[point])
+        descriptors[point] = descriptors[point] / norm(descriptors[point])
         #print descriptors[point]
         
     f.close()
@@ -70,59 +69,59 @@ def match(desc1,desc2):
     dist_ratio = 0.6
     desc1_size = desc1.shape
     
-    matchscores = zeros((desc1_size[0],1))
+    matchscores = np.zeros((desc1_size[0],1))
     desc2t = desc2.T #precompute matrix transpose
     for i in range(desc1_size[0]):
-        dotprods = dot(desc1[i,:],desc2t) #vector of dot products
+        dotprods = np.dot(desc1[i,:],desc2t) #vector of dot products
         dotprods = 0.9999*dotprods
         #inverse cosine and sort, return index for features in second image
-        indx = argsort(arccos(dotprods))
+        indx = np.argsort(np.arccos(dotprods))
         
         #check if nearest neighbor has angle less than dist_ratio times 2nd
-        if arccos(dotprods)[indx[0]] < dist_ratio * arccos(dotprods)[indx[1]]:
+        if np.arccos(dotprods)[indx[0]] < dist_ratio * np.arccos(dotprods)[indx[1]]:
             matchscores[i] = indx[0]
         
     return matchscores 
     
-def plot_features(im,locs):
-    """ show image with features. input: im (image as array), 
-        locs (row, col, scale, orientation of each feature) """
+#def plot_features(im,locs):
+#    """ show image with features. input: im (image as array), 
+#        locs (row, col, scale, orientation of each feature) """
+#    
+#    pylab.gray()
+#    pylab.imshow(im)
+#    pylab.plot([p[1] for p in locs], [p[0] for p in locs], 'ob')
+#    pylab.axis('off')
+#    pylab.show()
     
-    pylab.gray()
-    pylab.imshow(im)
-    pylab.plot([p[1] for p in locs], [p[0] for p in locs], 'ob')
-    pylab.axis('off')
-    pylab.show()
-    
-def appendimages(im1,im2):
-    """ return a new image that appends the two images side-by-side."""
-    
-    #select the image with the fewest rows and fill in enough empty rows
-    rows1 = im1.shape[0]    
-    rows2 = im2.shape[0]
-    
-    if rows1 < rows2:
-        im1 = concatenate((im1,zeros((rows2-rows1,im1.shape[1]))), axis=0)
-    else:
-        im2 = concatenate((im2,zeros((rows1-rows2,im2.shape[1]))), axis=0)
-        
-    return concatenate((im1,im2), axis=1)
-    
-def plot_matches(im1,im2,locs1,locs2,matchscores):
-    """ show a figure with lines joining the accepted matches in im1 and im2
-        input: im1,im2 (images as arrays), locs1,locs2 (location of features), 
-        matchscores (as output from 'match'). """
-    
-    im3 = appendimages(im1,im2)
+#def appendimages(im1,im2):
+#    """ return a new image that appends the two images side-by-side."""
+#    
+#    #select the image with the fewest rows and fill in enough empty rows
+#    rows1 = im1.shape[0]    
+#    rows2 = im2.shape[0]
+#    
+#    if rows1 < rows2:
+#        im1 = concatenate((im1,zeros((rows2-rows1,im1.shape[1]))), axis=0)
+#    else:
+#        im2 = concatenate((im2,zeros((rows1-rows2,im2.shape[1]))), axis=0)
+#        
+#    return concatenate((im1,im2), axis=1)
+#    
+#def plot_matches(im1,im2,locs1,locs2,matchscores):
+#    """ show a figure with lines joining the accepted matches in im1 and im2
+#        input: im1,im2 (images as arrays), locs1,locs2 (location of features), 
+#        matchscores (as output from 'match'). """
+#    
+#    im3 = appendimages(im1,im2)
 
-    pylab.gray()
-    pylab.imshow(im3)
-    
-    cols1 = im1.shape[1]
-    for i in range(len(matchscores)):
-        if matchscores[i] > 0:
-            pylab.plot([locs1[i,1], locs2[int(matchscores[i]),1]+cols1],
-                       [locs1[i,0], locs2[int(matchscores[i]),0]], 'c')
-    pylab.axis('off')
-    pylab.show()
+#    pylab.gray()
+#    pylab.imshow(im3)
+#    
+#    cols1 = im1.shape[1]
+#    for i in range(len(matchscores)):
+#        if matchscores[i] > 0:
+#            pylab.plot([locs1[i,1], locs2[int(matchscores[i]),1]+cols1],
+#                       [locs1[i,0], locs2[int(matchscores[i]),0]], 'c')
+#    pylab.axis('off')
+#    pylab.show()
 

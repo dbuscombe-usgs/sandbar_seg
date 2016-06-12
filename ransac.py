@@ -1,12 +1,12 @@
-from scipy import *
-from scipy.linalg import *
-from scipy.special import *
-from random import choice
-import sys
+"""
+Daniel Buscombe, June 2016
+"""
 
-from sift import *
-from homography import *
-# New version coming soon.
+from random import choice
+import numpy as np
+
+from homography import Haffine_from_points
+
 def get_points(locs1, locs2, matchscores):
     '''
         Return the corresponding points in both the images
@@ -24,7 +24,7 @@ def get_points(locs1, locs2, matchscores):
             plist.append([[x1,y1],[x2,y2]])
     return plist
 
-def ransac(im1, im2, points_list, iters = 10 , error = 10, good_model_num = 5):
+def doransac(im1, im2, points_list, iters = 10 , error = 10, good_model_num = 5):
     '''
         This function uses RANSAC algorithm to estimate the
         shift and rotation between the two given images
@@ -37,7 +37,7 @@ def ransac(im1, im2, points_list, iters = 10 , error = 10, good_model_num = 5):
 
     for i in range(iters):
         consensus_set = []
-        points_list_temp = copy(points_list).tolist()
+        points_list_temp = np.copy(points_list).tolist()
         # Randomly select 3 points
         for j in range(3):
             temp = choice(points_list_temp)
@@ -63,8 +63,8 @@ def ransac(im1, im2, points_list, iters = 10 , error = 10, good_model_num = 5):
             tp1.append(line[1][1])
             tp2.append(1)
             
-        fp = array([fp0, fp1, fp2])
-        tp = array([tp0, tp1, tp2])
+        fp = np.array([fp0, fp1, fp2])
+        tp = np.array([tp0, tp1, tp2])
         
         H = Haffine_from_points(fp, tp)
                             
@@ -76,11 +76,11 @@ def ransac(im1, im2, points_list, iters = 10 , error = 10, good_model_num = 5):
             x1, y1 = p[0]
             x2, y2 = p[1]
 
-            A = array([x1, y1, 1]).reshape(3,1)
-            B = array([x2, y2, 1]).reshape(3,1)
+            A = np.array([x1, y1, 1]).reshape(3,1)
+            B = np.array([x2, y2, 1]).reshape(3,1)
             
-            out = B - dot(H, A)
-            dist_err = hypot(out[0][0], out[1][0])
+            out = B - np.dot(H, A)
+            dist_err = np.hypot(out[0][0], out[1][0])
             if dist_err < error:
                 consensus_set.append(p)            
             
@@ -92,46 +92,18 @@ def ransac(im1, im2, points_list, iters = 10 , error = 10, good_model_num = 5):
                 x0, y0 = p[0]
                 x1, y1 = p[1]
                 
-                A = array([x0, y0, 1]).reshape(3,1)
-                B = array([x1, y1, 1]).reshape(3,1)
+                A = np.array([x0, y0, 1]).reshape(3,1)
+                B = np.array([x1, y1, 1]).reshape(3,1)
                 
-                out = B - dot(H, A)
-                dist_err = hypot(out[0][0], out[1][0])
+                out = B - np.dot(H, A)
+                dist_err = np.hypot(out[0][0], out[1][0])
                 dists.append(dist_err)
             if (max(dists) < error) and (max(dists) < model_error):
                 model_error = max(dists)
                 model_H = H
                         
     return model_H
-    
-if __name__ == "__main__":
-    #import Image
-    from PIL import Image
-    try:
-        os.mkdir("temp")
-    except OSError:
-        pass
 
-    try:
-        im1 = Image.open(sys.argv[1]).convert('L')
-        im2 = Image.open(sys.argv[2]).convert('L')
-    except IndexError:
-        print 'Usage: python ransac.py image1 image2'
-        sys.exit()
-    im1.save('temp/1.pgm')
-    im2.save('temp/2.pgm')
-    im1 = asarray(im1)
-    im2 = asarray(im2)
-    process_image('temp/1.pgm', 'temp/1.key')
-    process_image('temp/2.pgm', 'temp/2.key')
-    key1 = read_features_from_file('temp/1.key')
-    key2 = read_features_from_file('temp/2.key')
-    score = match(key1[1], key2[1])
-    plist = get_points(key1[0], key2[0], score)
-    plot_matches(im1,im2,key1[0],key2[0],score)
-    out = ransac(im1, im2, plist)
-    print 'Homography matrix: ', out
-    H = inv(out)
-    imtemp = affine_transform(im1, H[:2, :2], [H[0][2], H[1][2]])
-    Image.fromarray(im2).show()
-    Image.fromarray(imtemp).show()
+    
+    
+    
