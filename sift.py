@@ -22,7 +22,7 @@ def process_image(imagename, resultname):
         cmmd = "siftWin32 <"+imagename+">"+resultname
     
     os.system(cmmd)
-    print 'processed', imagename
+    #print 'processed', imagename
     
 def read_features_from_file(filename):
     """ read feature properties and return in matrix form"""
@@ -41,14 +41,14 @@ def read_features_from_file(filename):
     #parse the .key file
     e =f.read().split() #split the rest into individual elements
     pos = 0
-    for point in range(num):
+    for point in xrange(num):
         #row, col, scale, orientation of each feature
-        for i in range(4):
+        for i in xrange(4):
             locs[point,i] = float(e[pos+i])
         pos += 4
         
         #the descriptor values of each feature
-        for i in range(featlength):
+        for i in xrange(featlength):
             descriptors[point,i] = int(e[pos+i])
         #print descriptors[point]
         pos += 128
@@ -71,7 +71,7 @@ def match(desc1,desc2):
     
     matchscores = np.zeros((desc1_size[0],1))
     desc2t = desc2.T #precompute matrix transpose
-    for i in range(desc1_size[0]):
+    for i in xrange(desc1_size[0]):
         dotprods = np.dot(desc1[i,:],desc2t) #vector of dot products
         dotprods = 0.9999*dotprods
         #inverse cosine and sort, return index for features in second image
@@ -83,6 +83,8 @@ def match(desc1,desc2):
         
     return matchscores 
     
+
+
 #def plot_features(im,locs):
 #    """ show image with features. input: im (image as array), 
 #        locs (row, col, scale, orientation of each feature) """

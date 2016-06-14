@@ -13,7 +13,7 @@ def get_points(locs1, locs2, matchscores):
     '''
     plist = []
     t = min(len(locs1), len(locs2))
-    for i in range(len(matchscores)):
+    for i in xrange(len(matchscores)):
         if (matchscores[i] > 0):
             y1 = int(locs1[i, 1])
             x1 = int(locs1[i, 0])
@@ -35,7 +35,7 @@ def doransac(im1, im2, points_list, iters = 10 , error = 10, good_model_num = 5)
     model_error = 255
     model_H = None
 
-    for i in range(iters):
+    for i in xrange(iters):
         consensus_set = []
         points_list_temp = np.copy(points_list).tolist()
         # Randomly select 3 points
