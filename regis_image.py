@@ -10,7 +10,7 @@ from scipy.linalg import inv
 from PIL import Image
 
 from sift import read_features_from_file, match, process_image
-from ransac import doransac, get_points
+from ransac import get_points #, doransac
 
 from fnmatch import filter 
 
@@ -39,19 +39,23 @@ def doproc(im2, key2, direc, outdirec, w, h, slave):
        score = match(key1[1], key2[1])
        plist = get_points(key1[0], key2[0], score)
 
-       T = []
-       for k in xrange(20):
-          try:
-             out = doransac(im1, im2, plist)
-             H = inv(out)
+       a,b = zip(*plist)
+       shift = np.asarray(b)-np.asarray(a)
+       tvec = np.mean(shift, axis=0)*4
 
-             tvec=[-H[0][2]*4, -H[1][2]*4]
-             T.append(tvec)
-          except:
-             pass
+#       T = []
+#       for k in xrange(20):
+#          try:
+#             out = doransac(im1, im2, plist)
+#             H = inv(out)
+
+#             tvec=[-H[0][2]*4, -H[1][2]*4]
+#             T.append(tvec)
+#          except:
+#             pass
 
        try:
-          tvec = np.percentile(T,50,axis=0)
+          #tvec = np.percentile(T,50,axis=0)
 
           im1 = Image.open(direc+slave)
 
@@ -92,6 +96,13 @@ if __name__ == '__main__':
    im2 = np.asarray(im2)
    process_image('temp/2.pgm', 'temp/2.key')
    key2 = read_features_from_file('temp/2.key')
+
+   #the location of each keypoint in the image is specified by 4 floating point numbers giving subpixel row and column location,
+   #scale, and orientation (in radians from -PI to PI).  
+   #Obviously, these numbers are not invariant to viewpoint, but can be used in later
+   #stages of processing to check for geometric consistency among matches.
+   #Finally, the invariant descriptor vector for the keypoint is given as
+   #a list of 128 integers in range [0,255].
 
    Parallel(n_jobs = cpu_count(), verbose=0)(delayed(doproc)(im2, key2, direc, outdirec, w, h, slave) for slave in filenames)
 
