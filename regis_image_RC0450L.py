@@ -19,7 +19,6 @@ from joblib import Parallel, delayed, cpu_count
 import warnings
 warnings.filterwarnings("ignore")
 
-
 import string, random
 
 # =========================================================
@@ -75,15 +74,16 @@ def doproc(im2, key2, direc, outdirec, w, h, slave):
           im1 = Image.open(direc+slave)
           toimage(np.asarray(im1)).save(outfile)
 
+
 #==============================================
 if __name__ == '__main__':
 
-   master = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf/RC0307Rf_20091012_1130.jpg'
+   master = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0450L/RC0450L_20080304_0756.JPG'
 
-   direc = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf/'
+   direc = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0450L/'
    filenames = sorted(filter(os.listdir(direc), '*.[Jj][Pp][Gg]'))
 
-   outdirec = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf_regis/'
+   outdirec = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0450L_regis/'
 
    try:
       os.mkdir("temp")
@@ -95,10 +95,10 @@ if __name__ == '__main__':
    w,h = im2.size
 
    im2 = im2.resize((w/4, h/4))    
-   im2.save('temp/2.pgm')
+   im2.save('temp/2b.pgm')
    im2 = np.asarray(im2)
-   process_image('temp/2.pgm', 'temp/2.key')
-   key2 = read_features_from_file('temp/2.key')
+   process_image('temp/2b.pgm', 'temp/2b.key')
+   key2 = read_features_from_file('temp/2b.key')
 
    #the location of each keypoint in the image is specified by 4 floating point numbers giving subpixel row and column location,
    #scale, and orientation (in radians from -PI to PI).  
@@ -121,3 +121,16 @@ if __name__ == '__main__':
 #    master = '/home/filfy/github_clones/sandbar_seg/RC0651R_surveydata/RC0651R_20121009_1219.jpg'
 #    slave = '/home/filfy/github_clones/sandbar_seg/RC0651R_surveydata/RC0651R_20140930_1202.JPG'
     
+
+#       T = []
+#       for k in xrange(20):
+#          try:
+#             out = doransac(im1, im2, plist)
+#             H = inv(out)
+
+#             tvec=[-H[0][2]*4, -H[1][2]*4]
+#             T.append(tvec)
+#          except:
+#             pass
+
+          #tvec = np.percentile(T,50,axis=0)

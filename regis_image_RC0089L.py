@@ -71,19 +71,20 @@ def doproc(im2, key2, direc, outdirec, w, h, slave):
              toimage(np.asarray(im1)).save(outfile)
 
        except:
-
+ 
+          print slave+" failed"
           im1 = Image.open(direc+slave)
           toimage(np.asarray(im1)).save(outfile)
 
 #==============================================
 if __name__ == '__main__':
 
-   master = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf/RC0307Rf_20091012_1130.jpg'
+   master = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0089L/deployment1/RC0089L_20121004_0959.jpg'
 
-   direc = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf/'
+   direc = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0089L/deployment1/'
    filenames = sorted(filter(os.listdir(direc), '*.[Jj][Pp][Gg]'))
 
-   outdirec = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf_regis/'
+   outdirec = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0089L_regis/deployment1/'
 
    try:
       os.mkdir("temp")
@@ -95,10 +96,10 @@ if __name__ == '__main__':
    w,h = im2.size
 
    im2 = im2.resize((w/4, h/4))    
-   im2.save('temp/2.pgm')
+   im2.save('temp/2z.pgm')
    im2 = np.asarray(im2)
-   process_image('temp/2.pgm', 'temp/2.key')
-   key2 = read_features_from_file('temp/2.key')
+   process_image('temp/2z.pgm', 'temp/2z.key')
+   key2 = read_features_from_file('temp/2z.key')
 
    #the location of each keypoint in the image is specified by 4 floating point numbers giving subpixel row and column location,
    #scale, and orientation (in radians from -PI to PI).  
@@ -110,14 +111,3 @@ if __name__ == '__main__':
    Parallel(n_jobs = cpu_count(), verbose=0)(delayed(doproc)(im2, key2, direc, outdirec, w, h, slave) for slave in filenames)
 
 
-
-    ##22mile
-    #master = '/home/filfy/github_clones/sandbar_seg/RC0220Ra_surveydata/RC0220Ra_20130922_1353.jpg'
-    #slave =  '/home/filfy/github_clones/sandbar_seg/RC0220Ra_surveydata/RC0220Ra_20150924_1141.JPG'
-
-#    master = '/home/filfy/github_clones/sandbar_seg/RC0089L_surveydata/RC0089L_20121004_0959.jpg'
-#    slave = '/home/filfy/github_clones/sandbar_seg/RC0089L_surveydata/RC0089L_20130921_1553.jpg'    
-
-#    master = '/home/filfy/github_clones/sandbar_seg/RC0651R_surveydata/RC0651R_20121009_1219.jpg'
-#    slave = '/home/filfy/github_clones/sandbar_seg/RC0651R_surveydata/RC0651R_20140930_1202.JPG'
-    

@@ -78,12 +78,12 @@ def doproc(im2, key2, direc, outdirec, w, h, slave):
 #==============================================
 if __name__ == '__main__':
 
-   master = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf/RC0307Rf_20091012_1130.jpg'
+   master = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0651R/RC0651R_20121009_1219.jpg'
 
-   direc = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf/'
+   direc = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0651R/'
    filenames = sorted(filter(os.listdir(direc), '*.[Jj][Pp][Gg]'))
 
-   outdirec = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0307Rf_regis/'
+   outdirec = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0651R_regis/'
 
    try:
       os.mkdir("temp")
@@ -95,10 +95,10 @@ if __name__ == '__main__':
    w,h = im2.size
 
    im2 = im2.resize((w/4, h/4))    
-   im2.save('temp/2.pgm')
+   im2.save('temp/2a.pgm')
    im2 = np.asarray(im2)
-   process_image('temp/2.pgm', 'temp/2.key')
-   key2 = read_features_from_file('temp/2.key')
+   process_image('temp/2a.pgm', 'temp/2a.key')
+   key2 = read_features_from_file('temp/2a.key')
 
    #the location of each keypoint in the image is specified by 4 floating point numbers giving subpixel row and column location,
    #scale, and orientation (in radians from -PI to PI).  
