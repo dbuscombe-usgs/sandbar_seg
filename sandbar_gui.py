@@ -98,14 +98,16 @@ def ani_frames(infiles):
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
 
-    im = ax.imshow(imresize(imread(infiles[0]),.25))
+    #im = ax.imshow(imresize(imread(infiles[0]),.25))
+    im = ax.imshow(imread(infiles[0]))
 
     def init():
        im.set_data([[]])
        return im
 
     def update_img(i):
-        im.set_data(imresize(imread(infiles[i]),.25))
+        #im.set_data(imresize(imread(infiles[i]),.25))
+        im.set_data(imread(infiles[i]))
 
         ext = os.path.splitext(infiles[i])[1][1:]
         date = infiles[i].split(os.sep)[-1].split('RC')[-1].split('_')[1]
@@ -449,13 +451,13 @@ def gui():
 
     #=======================
     def _get_images():
-        self.imagefiles = askopenfilename(filetypes = [ ("Image Files", ("*.jpg", "*.JPG", '*.jpeg')), ("TIF",('*.tif', '*.tiff'))] , multiple=True)
+        self.imagefiles = askopenfilename(filetypes = [ ("Image Files", ("*.jpg", "*.JPG", '*.jpeg')), ("TIF",('*.tif', '*.tiff')), ("PNG",('*.PNG', '*.png'))] , multiple=True)
 
         for k in xrange(len(self.imagefiles)):
            print('image '+str(k)+' of '+str(len(self.imagefiles)-1))
            print(self.imagefiles[k])
         self.folder = os.path.dirname(self.imagefiles[0])
-
+        
         self.update()
 
     #=======================

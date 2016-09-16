@@ -33,7 +33,7 @@ def doproc(im2, key2, direc, outdirec, w, h, slave):
 
     outfile = outdirec + slave.split(os.sep)[-1].split(os.path.splitext(slave)[1])[0]+'_reg.jpg'
 
-    if not os.path.isfile(outfile): 
+    if 2>1: #not os.path.isfile(outfile): 
 
        im1 = Image.open(direc+slave).convert('L') #sys.argv[1]).convert('L')
         
@@ -66,6 +66,9 @@ def doproc(im2, key2, direc, outdirec, w, h, slave):
 
              imtemp = ird.transform_img(np.asarray(im1), tvec= tvec) #[-H[0][2]*4, -H[1][2]*4])
              toimage(imtemp).save(outfile)
+
+             with open(outfile.split('.jpg')[0]+'_xy.txt', 'w') as f:
+                np.savetxt(f, tvec, delimiter=',', fmt="%8.6f")
 
           else:
              toimage(np.asarray(im1)).save(outfile)
