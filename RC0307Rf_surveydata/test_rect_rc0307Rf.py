@@ -26,6 +26,7 @@ def dotrans(img,trans,size,mappts):
    return N_axis, E_axis, dst
 
 
+root = '/home/dbuscombe/github_clones/sandbar_seg/'
 
 cs2cs_args = "epsg:26949"
 trans =  pyproj.Proj(init=cs2cs_args)
@@ -36,19 +37,19 @@ lat = 36.5159
 campos = trans(lon, lat)
 campos = campos[1], campos[0]
 
-bkimg = imread('tifs/RM30_7.tif')
+bkimg = imread(root+'tifs/RM30_7.tif')
 x,y,d = bkimg.shape
-pos = np.genfromtxt('tifs/RM30_7.tfw')
+pos = np.genfromtxt(root+'tifs/RM30_7.tfw')
 imextent = [ pos[4], pos[4]+y*pos[0], pos[5]-x*pos[0], pos[5] ]
 
 ## test!!
 
-dat1 =  pickle.load( open( "RC0307Rf_surveydata/RC0307Rf_homo_trans1.p", "rb" ) )
-dat2 =  pickle.load( open( "RC0307Rf_surveydata/RC0307Rf_homo_trans2.p", "rb" ) )
-dat3 =  pickle.load( open( "RC0307Rf_surveydata/RC0307Rf_homo_trans3.p", "rb" ) )
-dat4 =  pickle.load( open( "RC0307Rf_surveydata/RC0307Rf_homo_trans4.p", "rb" ) )
-dat5 =  pickle.load( open( "RC0307Rf_surveydata/RC0307Rf_homo_trans5.p", "rb" ) )
-dat6 =  pickle.load( open( "RC0307Rf_surveydata/RC0307Rf_homo_trans6.p", "rb" ) )
+dat1 =  pickle.load( open( "RC0307Rf_homo_trans1.p", "rb" ) )
+dat2 =  pickle.load( open( "RC0307Rf_homo_trans2.p", "rb" ) )
+dat3 =  pickle.load( open( "RC0307Rf_homo_trans3.p", "rb" ) )
+dat4 =  pickle.load( open( "RC0307Rf_homo_trans4.p", "rb" ) )
+dat5 =  pickle.load( open( "RC0307Rf_homo_trans5.p", "rb" ) )
+dat6 =  pickle.load( open( "RC0307Rf_homo_trans6.p", "rb" ) )
 #dat7 =  pickle.load( open( "RC0307Rf_homo_trans7.p", "rb" ) )
 
 
@@ -76,32 +77,32 @@ infiles  = []
 xyz = []
 
 #1
-infiles.append('RC0307Rf_surveydata/RC0307Rf_20091012_1530_reg.jpg')
-xyz.append(np.genfromtxt('RC0307Rf_surveydata/30_091012_grid.TXT', delimiter=' '))
+infiles.append('RC0307Rf_20091012_1530_reg.jpg')
+xyz.append(np.genfromtxt('30_091012_grid.TXT', delimiter=' '))
 
 #2
-infiles.append('RC0307Rf_surveydata/RC0307Rf_20111007_1350_reg.jpg')
-xyz.append(np.genfromtxt('RC0307Rf_surveydata/30_111007_GRID.TXT', delimiter=' '))
+infiles.append('RC0307Rf_20111007_1350_reg.jpg')
+xyz.append(np.genfromtxt('30_111007_GRID.TXT', delimiter=' '))
 
 #3
-infiles.append('RC0307Rf_surveydata/RC0307Rf_20121004_1133_reg.jpg')
-xyz.append(np.genfromtxt('RC0307Rf_surveydata/30_121004_GRID.TXT', delimiter=' '))
+infiles.append('RC0307Rf_20121004_1133_reg.jpg')
+xyz.append(np.genfromtxt('30_121004_GRID.TXT', delimiter=' '))
 
 #4
-infiles.append('RC0307Rf_surveydata/RC0307Rf_20121128_1356_reg.jpg')
-xyz.append(np.genfromtxt('RC0307Rf_surveydata/30_121128_GRID.TXT', delimiter=' '))
+infiles.append('RC0307Rf_20121128_1356_reg.jpg')
+xyz.append(np.genfromtxt('30_121128_GRID.TXT', delimiter=' '))
 
 #5
-infiles.append('RC0307Rf_surveydata/RC0307Rf_20130923_1449.JPG_reg.jpg')
-xyz.append(np.genfromtxt('RC0307Rf_surveydata/30_130923_GRID.TXT', delimiter=' '))
+infiles.append('RC0307Rf_20130923_1449.JPG_reg.jpg')
+xyz.append(np.genfromtxt('30_130923_GRID.TXT', delimiter=' '))
 
 ##6
-infiles.append('RC0307Rf_surveydata/RC0307Rf_20140926_1327.JPG_reg.jpg')
-xyz.append(np.genfromtxt('RC0307Rf_surveydata/30_140926_GRID.TXT', delimiter=' '))
+infiles.append('RC0307Rf_20140926_1327.JPG_reg.jpg')
+xyz.append(np.genfromtxt('30_140926_GRID.TXT', delimiter=' '))
 
 #7
-infiles.append('RC0307Rf_surveydata/RC0307Rf_20150925_1138.JPG_reg.jpg')
-xyz.append(np.genfromtxt('RC0307Rf_surveydata/30_150925_GRID.TXT', delimiter=' '))
+infiles.append('RC0307Rf_20150925_1138.JPG_reg.jpg')
+xyz.append(np.genfromtxt('30_150925_GRID.TXT', delimiter=' '))
 
 
 
@@ -111,7 +112,7 @@ times = ['Oct 12, 2009, 15:30', 'Oct 7, 2011, 13:50', 'Oct 4, 2012, 11:33', 'Nov
 ## rect 1, image 1 - 7
 for k in range(7):
    img = cv2.imread(infiles[k])
-   img = img[500:1500,:y,:d]
+   #img = img[500:1500,:y,:d]
 
    N_axis, E_axis, dst = dotrans(img,homo[0],dsize,mappts)
 

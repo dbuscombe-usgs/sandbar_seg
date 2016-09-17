@@ -321,6 +321,7 @@ def onmouse(event,x,y,flags,param):
         rect_over = True
         cv2.rectangle(img,(ix,iy),(x,y),BLUE,2)
         rect = (min(ix,x),min(iy,y),abs(ix-x),abs(iy-y))
+
         rect_or_mask = 0
         print(" Now press the key 'n' a few times until no further change \n")
 
@@ -493,7 +494,7 @@ def gui():
           # input and output windows
           cv2.namedWindow('output', cv2.WINDOW_AUTOSIZE)
           cv2.namedWindow('input', cv2.WINDOW_AUTOSIZE)
-          cv2.namedWindow(filename, cv2.WINDOW_AUTOSIZE)
+          #cv2.namedWindow(filename, cv2.WINDOW_AUTOSIZE)
           cv2.setMouseCallback('input',onmouse)
           cv2.moveWindow('input',img.shape[1]+10,90)
 
@@ -503,7 +504,7 @@ def gui():
           while(1):
 
               cv2.imshow('output',output)
-              cv2.imshow(filename,img)
+              #cv2.imshow(filename,img)
               cv2.imshow('input',img)
               k = 0xFF & cv2.waitKey(1)
               # key bindings
@@ -516,10 +517,9 @@ def gui():
                   print(" mark foreground regions with left mouse button \n")
                   value = DRAW_FG
               elif k == ord('s'): # save image
-                  bar = np.zeros((img.shape[0],5,3),np.uint8)
+                  #bar = np.zeros((img.shape[0],5,3),np.uint8)
                   #res = np.hstack((img2,bar,img,bar,output))
-                  cv2.imwrite(filename+'_output.png',img) #res)
-                  print(" Result saved as image \n")
+                  #cv2.imwrite(filename+'_output.png',img) #res)
 
                   fig=plt.figure(); cs = plt.contour(output[:,:,0]>0, [0.5], colors='r');
                   plt.close(); del fig
@@ -527,7 +527,31 @@ def gui():
                   v = p.vertices
                   x = v[:,0]
                   y = v[:,1]
-                  pickle.dump( {'contour_x':x, 'contour_y':y, 'img':img2}, open( filename+"_out.p", "wb" ) )
+
+                  fig=plt.figure(); cs = plt.contour(img[:,:,1]==255, [0.5]);
+                  plt.close(); del fig
+                  p = cs.collections[0].get_paths()[0]
+                  v = p.vertices
+                  fg_x = v[:,0]
+                  fg_y = v[:,1]
+
+                  fig=plt.figure(); cs = plt.contour(img[:,:,0]==0, [0.5]);
+                  plt.close(); del fig
+                  p = cs.collections[0].get_paths()[0]
+                  v = p.vertices
+                  bg_x = v[:,0]
+                  bg_y = v[:,1]
+
+                  fig=plt.figure(); cs = plt.contour(np.bitwise_xor(img[:,:,0]==255, img[:,:,1]==255), [0.5]);
+                  plt.close(); del fig
+                  p = cs.collections[0].get_paths()[0]
+                  v = p.vertices
+                  rect_x = v[:,0]
+                  rect_y = v[:,1]
+
+                  pickle.dump( {'contour_x':x, 'contour_y':y, 'out_img':output, 'fg_x':fg_x, 'fg_y':fg_y, 'bg_x':bg_x, 'bg_y':bg_y, 'rect_x':rect_x, 'rect_y':rect_y, 'scale':scale}, open( filename+"_out.p", "wb" ) )
+
+                  print(" Results saved\n")
                   #tmp = pickle.load(open('22mile.JPG_out.p', 'rb'))
                   #plt.imshow(tmp['img']); plt.plot(tmp['contour_x'], tmp['contour_y'], 'r'); plt.show()
                   break
@@ -544,6 +568,7 @@ def gui():
                   img = img2.copy()
                   mask = np.zeros(img.shape[:2],dtype = np.uint8) # mask initialized to PR_BG
                   output = np.zeros(img.shape,np.uint8)           # output image to be shown
+
               elif k == ord('n'): # segment the image
                   print(""" For finer touchups, mark foreground and background after pressing keys 0-3
                   and again press 'n' \n""")

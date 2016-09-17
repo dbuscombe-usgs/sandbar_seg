@@ -9,20 +9,22 @@ import cPickle as pickle
 cs2cs_args = "epsg:26949"
 trans =  pyproj.Proj(init=cs2cs_args)
 
+root = '/home/dbuscombe/github_clones/sandbar_seg/'
+
 #coords for 30mile
 lon = -111.8476
 lat = 36.5159
 campos = trans(lon, lat)
 campos = campos[1], campos[0]
 
-bkimg = imread('tifs/RM30_7.tif')
+bkimg = imread(root+'tifs/RM30_7.tif')
 x,y,d = bkimg.shape
-pos = np.genfromtxt('tifs/RM30_7.tfw')
+pos = np.genfromtxt(root+'tifs/RM30_7.tfw')
 imextent = [ pos[4], pos[4]+y*pos[0], pos[5]-x*pos[0], pos[5] ]
 
 ##1
-#infile = 'RC0307Rf_surveydata/RC0307Rf_20091012_1530_reg.jpg'
-#xyz = np.genfromtxt('RC0307Rf_surveydata/30_091012_grid.TXT', delimiter=' ')
+#infile = 'RC0307Rf_20091012_1530_reg.jpg'
+#xyz = np.genfromtxt('30_091012_grid.TXT', delimiter=' ')
 
 ##2
 #infile = 'RC0307Rf_surveydata/RC0307Rf_20111007_1350_reg.jpg'
@@ -45,12 +47,12 @@ imextent = [ pos[4], pos[4]+y*pos[0], pos[5]-x*pos[0], pos[5] ]
 #xyz = np.genfromtxt('RC0307Rf_surveydata/30_140926_GRID.TXT', delimiter=' ')
 
 ##7
-infile = 'RC0307Rf_surveydata/RC0307Rf_20150925_1138.JPG_reg.jpg'
-xyz = np.genfromtxt('RC0307Rf_surveydata/30_150925_GRID.TXT', delimiter=' ')
+#infile = 'RC0307Rf_20150925_1138.JPG_reg.jpg'
+#xyz = np.genfromtxt('30_150925_GRID.TXT', delimiter=' ')
 
 
 img = cv2.imread(infile)
-img = img[500:1500,:y,:d]
+#img = img[500:1500,:y,:d]
 
 
 ## plot gcps on oblique, then rectified, images
@@ -155,6 +157,9 @@ pts1 = np.array([[  1.58298603e+02,   5.58246304e+02],
 pts = pts1
 
 impts = pts[:len(pts)/2]
+
+impts[:,1] = impts[:,1]+500
+
 mappts = pts[len(pts)/2:]
 pts2 = np.vstack((mappts[:,0],mappts[:,1])).T
 
