@@ -26,7 +26,7 @@
 ===============================================================================
 Interactive Sandbar Segmentation using GrabCut algorithm.
 A Program by Daniel Buscombe, USGS
-April - May 2016
+April - May, Sept 2016
 
 README FIRST:
     Two windows will show up, one for input and one for output.
@@ -521,6 +521,8 @@ def gui():
                   #res = np.hstack((img2,bar,img,bar,output))
                   #cv2.imwrite(filename+'_output.png',img) #res)
 
+                  print(" Saving results ...\n")
+
                   fig=plt.figure(); cs = plt.contour(output[:,:,0]>0, [0.5], colors='r');
                   plt.close(); del fig
                   p = cs.collections[0].get_paths()[0]
@@ -528,28 +530,40 @@ def gui():
                   x = v[:,0]
                   y = v[:,1]
 
-                  fig=plt.figure(); cs = plt.contour(img[:,:,1]==255, [0.5]);
-                  plt.close(); del fig
-                  p = cs.collections[0].get_paths()[0]
-                  v = p.vertices
-                  fg_x = v[:,0]
-                  fg_y = v[:,1]
+                  try:
+                     fig=plt.figure(); cs = plt.contour(img[:,:,1]==255, [0.5]);
+                     plt.close(); del fig
+                     p = cs.collections[0].get_paths()[0]
+                     v = p.vertices
+                     fg_x = v[:,0]
+                     fg_y = v[:,1]
+                  except:
+                     fg_x = np.nan
+                     fg_y = np.nan
 
-                  fig=plt.figure(); cs = plt.contour(img[:,:,0]==0, [0.5]);
-                  plt.close(); del fig
-                  p = cs.collections[0].get_paths()[0]
-                  v = p.vertices
-                  bg_x = v[:,0]
-                  bg_y = v[:,1]
+                  try:
+                     fig=plt.figure(); cs = plt.contour(img[:,:,0]==0, [0.5]);
+                     plt.close(); del fig
+                     p = cs.collections[0].get_paths()[0]
+                     v = p.vertices
+                     bg_x = v[:,0]
+                     bg_y = v[:,1]
+                  except:
+                     bg_x = np.nan
+                     bg_y = np.nan
 
-                  fig=plt.figure(); cs = plt.contour(np.bitwise_xor(img[:,:,0]==255, img[:,:,1]==255), [0.5]);
-                  plt.close(); del fig
-                  p = cs.collections[0].get_paths()[0]
-                  v = p.vertices
-                  rect_x = v[:,0]
-                  rect_y = v[:,1]
+                  try:
+                     fig=plt.figure(); cs = plt.contour(np.bitwise_xor(img[:,:,0]==255, img[:,:,1]==255), [0.5]);
+                     plt.close(); del fig
+                     p = cs.collections[0].get_paths()[0]
+                     v = p.vertices
+                     rect_x = v[:,0]
+                     rect_y = v[:,1]
+                  except:
+                     rect_x = np.nan
+                     rect_y = np.nan
 
-                  pickle.dump( {'contour_x':x, 'contour_y':y, 'out_img':output, 'fg_x':fg_x, 'fg_y':fg_y, 'bg_x':bg_x, 'bg_y':bg_y, 'rect_x':rect_x, 'rect_y':rect_y, 'scale':scale}, open( filename+"_out.p", "wb" ) )
+                  pickle.dump( {'contour_x':x, 'contour_y':y, 'out_img':output, 'fg_x':fg_x, 'fg_y':fg_y, 'bg_x':bg_x, 'bg_y':bg_y, 'rect_x':rect_x, 'rect_y':rect_y, 'scale':scale, 'img':img2, 'img_hsv':imagehsv, 'laplacian':la, 'meanfilt':m1, 'stdevfilt':s1}, open( filename+"_out.p", "wb" ) )
 
                   print(" Results saved\n")
                   #tmp = pickle.load(open('22mile.JPG_out.p', 'rb'))
@@ -575,7 +589,10 @@ def gui():
                   if (rect_or_mask == 0):         # grabcut with rect
                       bgdmodel = np.zeros((1,65),np.float64)
                       fgdmodel = np.zeros((1,65),np.float64)
-                      cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,1,cv2.GC_INIT_WITH_RECT)
+                      try:
+                         cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,1,cv2.GC_INIT_WITH_RECT)
+                      except:
+                         pass
 
                       mask = clean_mask(mask, imagehsv, s1, s2, m1, m2)
 
@@ -583,7 +600,10 @@ def gui():
                   elif rect_or_mask == 1:         # grabcut with mask
                       bgdmodel = np.zeros((1,65),np.float64)
                       fgdmodel = np.zeros((1,65),np.float64)
-                      cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,1,cv2.GC_INIT_WITH_MASK)
+                      try:
+                         cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,1,cv2.GC_INIT_WITH_MASK)
+                      except:
+                         pass  
 
               mask2 = np.where((mask==1) + (mask==3),255,0).astype('uint8')
               mask2 = finalise_mask(mask2, Athres)
