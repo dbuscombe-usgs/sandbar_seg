@@ -119,15 +119,15 @@ infiles.append('RC0307Rf_20121128_1356_reg.jpg')
 xyz.append(np.genfromtxt('30_121128_GRID.TXT', delimiter=' '))
 
 #5
-infiles.append('RC0307Rf_20130923_1449.JPG_reg.jpg')
+infiles.append('RC0307Rf_20130923_1449_reg.jpg')
 xyz.append(np.genfromtxt('30_130923_GRID.TXT', delimiter=' '))
 
 ##6
-infiles.append('RC0307Rf_20140926_1327.JPG_reg.jpg')
+infiles.append('RC0307Rf_20140926_1327_reg.jpg')
 xyz.append(np.genfromtxt('30_140926_GRID.TXT', delimiter=' '))
 
 #7
-infiles.append('RC0307Rf_20150925_1138.JPG_reg.jpg')
+infiles.append('RC0307Rf_20150925_1138_reg.jpg')
 xyz.append(np.genfromtxt('30_150925_GRID.TXT', delimiter=' '))
 
 counter=0
@@ -149,9 +149,9 @@ for infile in infiles:
    plt.xlim(campos[1]-xd/2, campos[1]+xd/2)
    plt.ylim(campos[0]-yd/2, campos[0]+yd/2)
 
-   plt.imshow(rectim, origin='lower', extent = [E.min(), E.max(), N.min(), N.max()], cmap='gray' )
+   plt.imshow(rectim, origin='lower', extent = [E.min(), E.max(), N.min(), N.max()], cmap='gray', alpha=0.5 )
    #plt.plot(tx+E.min(), ty+N.min(), 'r', lw=2) 
-   plt.plot(xyz[counter][:,1], xyz[counter][:,2],'k.')
+   plt.plot(xyz[counter][:,1], xyz[counter][:,2],'k.', markersize=2)
    plt.axis('image'); 
 
    ax.get_xaxis().get_major_formatter().set_useOffset(False)

@@ -76,7 +76,7 @@ import cv2
 
 import cPickle as pickle
 import datetime as DT
-import calendar
+#import calendar
 
 import matplotlib
 matplotlib.use("Agg")
@@ -87,8 +87,20 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
 
-# chaneg this for windows:
-rootfolder = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/'
+#=========================================================
+#=======================================================
+#=========================================================
+#=======================================================
+## settings
+
+rootfolder = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/' #root folder where images are located
+Athres = 1000 #smallest permissible bar size
+scale = 0.25 #size of image actually worked with
+
+#=========================================================
+#=======================================================
+#=========================================================
+#=======================================================
 
 ##============================================
 def ani_frames(infiles):
@@ -142,7 +154,6 @@ def ani_frames_withQdat(infiles, dat):
        ext = os.path.splitext(infile)[1][1:]
        date = infile.split(os.sep)[-1].split('RC')[-1].split('_')[1]
        time = infile.split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
-
        image_time = toTimestamp(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M'))+ 6 * 60 * 60
        image_times.append(image_time)
        Q.append(np.interp(image_time,dat['timeunix'],dat['Qcfs']))
@@ -150,19 +161,24 @@ def ani_frames_withQdat(infiles, dat):
        T.append(time)
        datenums.append(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M'))
 
-    ax2 = fig.add_subplot(212, aspect=.005)
-    #ax2.set_aspect('auto')
-    #ax2 = plt.axes(ylim=(np.min(np.asarray(Q))-100, np.max(np.asarray(Q))+100))
 
-    xfmt = md.DateFormatter('%Y-%m-%d')
-    ax2.xaxis.set_major_formatter(xfmt)
-
-    ti = np.arange(image_times[0], image_times[-1], 60)
+    ti = np.arange(sorted(image_times)[0], sorted(image_times)[-1], 60)
     Qall = np.interp(ti,dat['timeunix'],dat['Qcfs'])
 
     tiplot = []
     for i in xrange(len(ti)):
        tiplot.append(DT.datetime.fromtimestamp(ti[i]))
+
+    aspect = (np.max(ti) - np.min(np.asarray(ti))) / (np.max(np.asarray(Qall)) - np.min(np.asarray(Qall)))
+    aspect = aspect / 20000
+    print(aspect)
+
+    ax2 = fig.add_subplot(212, aspect=aspect)#.002)
+    #ax2.set_aspect('auto')
+    #ax2 = plt.axes(ylim=(np.min(np.asarray(Q))-100, np.max(np.asarray(Q))+100))
+
+    xfmt = md.DateFormatter('%Y-%m-%d')
+    ax2.xaxis.set_major_formatter(xfmt)
 
     #plt.plot(datenums,Q,'k')
     plt.plot(tiplot, Qall,'k')
@@ -170,6 +186,7 @@ def ani_frames_withQdat(infiles, dat):
     plt.xticks( rotation=25 )
     plt.yticks( rotation=25 )
     plt.ylabel('Discharge (cfs)')
+
 
     line, = ax2.plot([], [], 'ro', lw=2)
 
@@ -200,7 +217,7 @@ def ani_frames_withQdat(infiles, dat):
     else:
        print('using avconv to compile video')
        writer = animation.writers['avconv'](fps=1)
-
+ 
     ani.save(infiles[0].split(os.sep)[-1].split('.')[0]+'_'+infiles[-1].split(os.sep)[-1].split('.')[0]+'.mp4',writer=writer,dpi=600)
     del fig
     print("Done!")
@@ -452,12 +469,18 @@ def gui():
 
     #=======================
     def _get_images():
-        self.imagefiles = askopenfilename(filetypes = [ ("Image Files", ("*.jpg", "*.JPG", '*.jpeg')), ("TIF",('*.tif', '*.tiff')), ("PNG",('*.PNG', '*.png'))] , multiple=True)
+        self.imagefiles = sorted(askopenfilename(filetypes = [ ("Image Files", ("*.jpg", "*.JPG", '*.jpeg')), ("TIF",('*.tif', '*.tiff')), ("PNG",('*.PNG', '*.png'))] , multiple=True))
 
         for k in xrange(len(self.imagefiles)):
            print('image '+str(k)+' of '+str(len(self.imagefiles)-1))
            print(self.imagefiles[k])
         self.folder = os.path.dirname(self.imagefiles[0])
+        self.folder_out = self.folder+'_seg_results'
+
+        try:
+           os.mkdir(self.folder_out)
+        except:
+           pass
         
         self.update()
 
@@ -483,8 +506,8 @@ def gui():
           rect_or_mask = 100      # flag for selecting rect or mask mode
           value = DRAW_FG         # drawing initialized to FG
           thickness = 2           # brush thickness
-          Athres = 1000
-          scale = 0.25
+          #Athres = 1000
+          #scale = 0.25
 
           img, imagehsv, im, la, m1, s1, m2, s2 = read_image(filename, scale)
           img2 = img.copy()                               # a copy of original image
@@ -563,7 +586,9 @@ def gui():
                      rect_x = np.nan
                      rect_y = np.nan
 
-                  pickle.dump( {'contour_x':x, 'contour_y':y, 'out_img':output, 'fg_x':fg_x, 'fg_y':fg_y, 'bg_x':bg_x, 'bg_y':bg_y, 'rect_x':rect_x, 'rect_y':rect_y, 'scale':scale, 'img':img2, 'img_hsv':imagehsv, 'laplacian':la, 'meanfilt':m1, 'stdevfilt':s1}, open( filename+"_out.p", "wb" ) )
+                  outfile = self.folder_out +os.sep+os.path.basename(filename)+"_out.p"
+
+                  pickle.dump( {'contour_x':x, 'contour_y':y, 'out_img':output, 'fg_x':fg_x, 'fg_y':fg_y, 'bg_x':bg_x, 'bg_y':bg_y, 'rect_x':rect_x, 'rect_y':rect_y, 'scale':scale, 'img':img2, 'img_hsv':imagehsv, 'laplacian':la, 'meanfilt':m1, 'stdevfilt':s1}, open(outfile, "wb") ) #open( filename+"_out.p", "wb" ) )
 
                   print(" Results saved\n")
                   #tmp = pickle.load(open('22mile.JPG_out.p', 'rb'))
@@ -584,8 +609,8 @@ def gui():
                   output = np.zeros(img.shape,np.uint8)           # output image to be shown
 
               elif k == ord('n'): # segment the image
-                  print(""" For finer touchups, mark foreground and background after pressing keys 0-3
-                  and again press 'n' \n""")
+                  #print(""" For finer touchups, mark foreground and background after pressing keys 0-3
+                  #and again press 'n' \n""")
                   if (rect_or_mask == 0):         # grabcut with rect
                       bgdmodel = np.zeros((1,65),np.float64)
                       fgdmodel = np.zeros((1,65),np.float64)
@@ -844,7 +869,7 @@ def gui():
         for filetypes in types:
            infiles.extend(glob(imagefolder+filetypes))
 
-        infiles = set(infiles)
+        infiles = sorted(infiles)
 
         print("Number of files to search: "+str(len(infiles)))
 

@@ -31,8 +31,8 @@ class Calendar(ttk.Frame):
         """
         # remove custom options from kw before initializating ttk.Frame
         fwday = kw.pop('firstweekday', calendar.MONDAY)
-        year = kw.pop('year', self.datetime.now().year)
-        month = kw.pop('month', self.datetime.now().month)
+        year = kw.pop('year', 2009) #self.datetime.now().year)
+        month = kw.pop('month', 10) #self.datetime.now().month)
         locale = kw.pop('locale', None)
         sel_bg = kw.pop('selectbackground', '#ecffc4')
         sel_fg = kw.pop('selectforeground', '#05640e')
