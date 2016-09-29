@@ -23,6 +23,9 @@ from joblib import Parallel, delayed, cpu_count
 import warnings
 warnings.filterwarnings("ignore")
 
+#from Tkinter import Tk
+#from tkFileDialog import askopenfilename, askdirectory
+
 
 #==============================================
 #==============================================
@@ -162,32 +165,52 @@ def doproc(master, direc, outdirec, slave):
 
     outfile = outdirec + slave.split(os.sep)[-1].split(os.path.splitext(slave)[1])[0]+'_reg.jpg'
 
-    if not os.path.isfile(outfile):
-       rgbimage = Image.open(direc+slave)
+    if 2>1: #not os.path.isfile(outfile):
+       rgbimage = np.asarray(Image.open(direc+slave))
        slave_image = np.asarray(Image.open(direc+slave).convert('L'))
 
+       slave_image = slave_image[1071:2059, 2382:3765]
+
        try:
-          t0, t1 = translation(master, slave_image)
+          #t0, t1 = translation(master, slave_image)
+          #tvec = [t0, t1]
+          imtemp, scale, angle, (t1,t0) = similarity(master, slave_image)
           tvec = [t0, t1]
 
           if np.sum(np.abs(tvec))>16: 
-             imtemp = ndii.shift(rgbimage, [t0, t1,0])
+             #imtemp = ndii.shift(rgbimage, [t0, t1,0])
 
-             ##imtemp, scale, angle, (t0, t1) = similarity(template, image)
-             ##imtemp = ndii.zoom(rgbimage, 1.0/scale)
-             ##imtemp = ndii.rotate(imtemp, angle)
-             ##imtemp = ndii.shift(imtemp, [t0, t1,0])
+             imtemp = ndii.zoom(rgbimage, 1.0/scale)
+             imtemp = ndii.rotate(rgbimage, angle)
+
+             if imtemp.shape < rgbimage.shape:
+                t = np.zeros_like(rgbimage)
+                t[:imtemp.shape[0], :imtemp.shape[1]] = imtemp
+                imtemp = t
+             elif imtemp.shape > rgbimage.shape:
+                imtemp = imtemp[:rgbimage.shape[0], :rgbimage.shape[1]]
+
+             imtemp = ndii.shift(imtemp, [t0, t1, 0])
+
+             #if scale!=1.:
+             #   imtemp = ndii.zoom(rgbimage, 1.0/scale)
+             #else:
+             #   imtemp = rgbimage
+             #imtemp = ndii.rotate(imtemp, 1.0/angle)
+             #imtemp = ndii.shift(imtemp, [t0, t1,0])
+
+             #imtemp = ndii.zoom(imtemp, (np.shape(rgbimage)[0]/np.shape(imtemp)[0], np.shape(rgbimage)[1]/np.shape(imtemp)[1], 1 ))
 
              toimage(imtemp).save(outfile)
 
              with open(outfile.split('.jpg')[0]+'_xy.txt', 'w') as f:
-                np.savetxt(f, tvec, delimiter=',', fmt="%8.6f")
+                np.savetxt(f, [t0, t1, scale, angle], delimiter=',', fmt="%8.6f")
 
           else:
-             toimage(np.asarray(rgbimage)).save(outfile)
+             toimage(rgbimage).save(outfile)
 
        except:
-          toimage(np.asarray(rgbimage)).save(outfile)
+          toimage(rgbimage).save(outfile)
 
 #==============================================
 #==============================================
@@ -198,6 +221,9 @@ if __name__ == '__main__':
    direc = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0651R/'
    filenames = sorted(filter(os.listdir(direc), '*.[Jj][Pp][Gg]'))
 
+   #Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+   #filenames = askopenfilename(filetypes=[("images","*.jpg *.JPG")], multiple=True)
+
    outdirec = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/RC0651R_regis/'
 
    try:
@@ -207,7 +233,9 @@ if __name__ == '__main__':
 
    master = np.asarray(Image.open(master_file).convert('L'))
 
-   Parallel(n_jobs = cpu_count(), verbose=1000)(delayed(doproc)(master, direc, outdirec, slave) for slave in filenames)
+   master = master[1071:2059, 2382:3765]
+
+   Parallel(n_jobs = cpu_count()-1, verbose=1000)(delayed(doproc)(master, direc, outdirec, slave) for slave in filenames)
 
 
 
