@@ -165,7 +165,7 @@ def doproc(master, direc, outdirec, slave):
 
     outfile = outdirec + slave.split(os.sep)[-1].split(os.path.splitext(slave)[1])[0]+'_reg.jpg'
 
-    if 2>1: #not os.path.isfile(outfile):
+    if not os.path.isfile(outfile):
        rgbimage = np.asarray(Image.open(direc+slave))
        slave_image = np.asarray(Image.open(direc+slave).convert('L'))
 
