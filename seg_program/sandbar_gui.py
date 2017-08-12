@@ -57,7 +57,7 @@ except ImportError: # py3k
 
 import ttk
 
-from tkFileDialog import askopenfilename
+from tkFileDialog import askopenfilename, askdirectory
 import os
 from glob import glob
 
@@ -94,6 +94,11 @@ warnings.filterwarnings("ignore")
 ## settings
 
 rootfolder = '/run/media/dbuscombe/MASTER/GCMRC/SANDBAR_REMOTECAMERAS/' #root folder where images are located
+
+rootfolder = askdirectory(initialdir=rootfolder) 
+rootfolder += os.sep
+print(rootfolder)
+
 Athres = 1000 #smallest permissible bar size
 scale = 0.25 #size of image actually worked with
 
@@ -228,41 +233,62 @@ def toTimestamp(d):
   return calendar.timegm(d.timetuple())
 
 ##======================================================
-def load_gagedata(nearest_gage):
+def load_gagedata(nearest_gage, site):
 
    if os.name=='nt':
       if nearest_gage == 0:
          dat =  pickle.load( open( "rm0_time_Qcfs.p", "rb" ) )
+         sl = 0.203
+         inter = 0.112
       elif nearest_gage == 1:
          dat =  pickle.load( open( "rm30_time_Qcfs.p", "rb" ) )
+         sl = 0.193
+         inter = -5.69         
       elif nearest_gage == 2:
          dat =  pickle.load( open( "rm61_time_Qcfs.p", "rb" ) )
+         sl = 0.184
+         inter = -11.2
       elif nearest_gage == 3:
          dat =  pickle.load( open( "rm87_time_Qcfs.p", "rb" ) )
+         sl = 0.183
+         inter = -15.9
       elif nearest_gage == 4:
          dat =  pickle.load( open( "rm166_time_Qcfs.p", "rb" ) )
-      elif nearest_gage == 5:
-         dat =  pickle.load( open( "rm225_time_Qcfs.p", "rb" ) )
+         sl = 0.183
+         inter = -30.2
+      #elif nearest_gage == 5:
+      #   dat =  pickle.load( open( "rm225_time_Qcfs.p", "rb" ) )
       else:
          print("error specifiying gage")
 
    else:
       if nearest_gage == 0:
          dat =  pickle.load( open( "rm0_time_Qcfs.p", "rb" ) )
+         sl = 0.203
+         inter = 0.112
       elif nearest_gage == 1:
          dat =  pickle.load( open( "rm30_time_Qcfs.p", "rb" ) )
+         sl = 0.193
+         inter = -5.69  
       elif nearest_gage == 2:
          dat =  pickle.load( open( "rm61_time_Qcfs.p", "rb" ) )
+         sl = 0.184
+         inter = -11.2
       elif nearest_gage == 3:
          dat =  pickle.load( open( "rm87_time_Qcfs.p", "rb" ) )
+         sl = 0.183
+         inter = -15.9
       elif nearest_gage == 4:
          dat =  pickle.load( open( "rm166_time_Qcfs.p", "rb" ) )
-      elif nearest_gage == 5:
-         dat =  pickle.load( open( "rm225_time_Qcfs.p", "rb" ) )
+         sl = 0.183
+         inter = -30.2
+      #elif nearest_gage == 5:
+      #   dat =  pickle.load( open( "rm225_time_Qcfs.p", "rb" ) )
       else:
          print("error specifiying gage")
 
-   return dat
+   lag_hrs = sl*site + inter
+   return dat, lag_hrs
    #cfs to cms = 0.028316847
 
 #======================================================
@@ -393,7 +419,7 @@ def gui():
 
     self = master.master  # short-cut to top-level window
     master.pack()  # pack the Frame into root, defaults to side=TOP
-    self.title('Sandbar Image Processing Tool')  # name the window
+    self.title('RCSandSeg')  # name the window
 
     # create notebook
     demoPanel = Tkinter.Frame(master, name='demo')  # create a new frame slaved to master
@@ -493,7 +519,7 @@ def gui():
            print('image '+str(k)+' of '+str(len(self.imagefiles)-1))
            print(self.imagefiles[k])
         self.folder = os.path.dirname(self.imagefiles[0])
-        self.folder_out = self.folder+'_seg_results'
+        self.folder_out = os.getcwd() + os.sep + 'seg_results' #self.folder+'_seg_results'
 
         try:
            os.mkdir(self.folder_out)
@@ -678,10 +704,17 @@ def gui():
     #=======================
     # discharge
     self.Nvar = Tkinter.DoubleVar()
-    Nscale = Tkinter.Scale( q_frame, variable = self.Nvar, from_=5000, to=45000, resolution=1000, tickinterval=1000, label = 'Discharge' )
+    Nscale = Tkinter.Scale( q_frame, variable = self.Nvar, from_=5000, to=45000, resolution=1000, tickinterval=1000, label = 'Discharge (Q)' )
     Nscale.set(8000)
     Nscale.grid(row=0, column=1,  pady=(2,4))
     Nscale.configure(background='thistle3', fg="black")
+
+    # discharge tolerance
+    self.NvarTol = Tkinter.DoubleVar()
+    NscaleTol = Tkinter.Scale( q_frame, variable = self.NvarTol, from_=50, to=500, resolution=50, tickinterval=100, label = 'Q Tolerance' )
+    NscaleTol.set(100)
+    NscaleTol.grid(row=0, column=2,  pady=(2,4))
+    NscaleTol.configure(background='thistle3', fg="black")
 
     #=======================
     #menu for site
@@ -893,12 +926,13 @@ def gui():
 
         # determine the nearest gage and load the appropriate discharge data
         site = int(self.sitepick.split('RC')[-1].split('_')[0][:3])
-        gages = np.asarray([0,30,61,87,166,225])
+        gages = np.asarray([0,30,61,87,166]) #,225])
         nearest_gage = np.argmin(np.abs(site - gages))
 
         if self.datloaded == 0:
            print("Loading data from nearest gage ("+str(gages[nearest_gage])+" mile)")
-           self.dat = load_gagedata(nearest_gage)
+           self.dat, self.lag_hrs = load_gagedata(nearest_gage, site)
+           print(self.lag_hrs)
            self.datloaded = 1
 
         # get unix timestamps rfom the user selected start and end dates
@@ -929,18 +963,26 @@ def gui():
             ext = os.path.splitext(filename)[1][1:]
             date = filename.split(os.sep)[-1].split('RC')[-1].split('_')[1]
             time = filename.split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
-            image_time = toTimestamp(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M'))+ 6 * 60 * 60
+            image_time = toTimestamp(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M'))+ (6 * 60 * 60) + (self.lag_hrs * 60 * 60)
             I.append(image_time)
-            # add 6 hours (mst to gmt)
+            # add 6 hours (mst to gmt) and lag between gage
             Q.append(np.interp(image_time,self.dat['timeunix'],self.dat['Qcfs']))
 
         Q = np.asarray(Q)
         I = np.asarray(I)
 
-        indices = np.where((I>=start_time) & (I<=end_time) & (Q>=self.Nvar.get()-100) & (Q<=self.Nvar.get()+100))[0]
+        indices = np.where((I>=start_time) & (I<=end_time) & (Q>=self.Nvar.get()-self.NvarTol.get()) & (Q<=self.Nvar.get()+self.NvarTol.get()))[0] #100
         print("Number of files within time window and near specified discharge: "+str(len(indices)))
 
         self.imagefiles = np.asarray(F)[indices] #infiles
+
+        self.folder_out = os.getcwd() + os.sep + 'seg_results' #self.folder+'_seg_results'
+
+        try:
+           os.mkdir(self.folder_out)
+        except:
+           pass
+
         self.update()
 
     #==============================================================
@@ -1153,6 +1195,14 @@ def gui():
         print("Number of files within time window: "+str(len(indices)))
 
         self.imagefiles = np.asarray(F)[indices]
+
+        self.folder_out = os.getcwd() + os.sep + 'seg_results' #self.folder+'_seg_results'
+
+        try:
+           os.mkdir(self.folder_out)
+        except:
+           pass
+
         self.update()
 
     #==============================================================
