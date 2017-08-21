@@ -1,7 +1,10 @@
-## has been developed at the Grand Canyon Monitoring & Research Center,
+## RCSandSeg.py has been developed by Dr Daniel Buscombe
+## at the Grand Canyon Monitoring & Research Center,
 ## U.S. Geological Survey
+## then subsequently at Northern Arizona University
 ##
 ## Author: Daniel Buscombe
+## Email: daniel.buscombe@nau.edu
 ## Project homepage: <https://github.com/dbuscombe-usgs/sandbar_seg>
 ##
 ##This software is in the public domain because it contains materials that originally came from
@@ -26,6 +29,7 @@
 ===============================================================================
 Interactive Sandbar Segmentation using GrabCut algorithm.
 A Program by Daniel Buscombe, USGS and NAU
+Bugs/comments/questions: daniel.buscombe@nau.edu
 2016 -- 2017
 
 README FIRST:
@@ -46,25 +50,33 @@ Key 's' - To save the results
 '''
 
 from __future__ import print_function, division
-from Tix import *
 
-try:
-    import Tkinter
-    import tkFont
-except ImportError: # py3k
+#import matplotlib
+#matplotlib.use("Agg")
+
+import sys
+
+if sys.version_info.major == 3:
+    from tkinter.tix import *
     import tkinter as Tkinter
     import tkinter.font as tkFont
-
-import ttk
-
-from tkFileDialog import askopenfilename, askdirectory
-import os
-from glob import glob
+    import tkinter.ttk as ttk
+    from tkinter.filedialog import askopenfilename, askdirectory
+    import tkinter.scrolledtext as ScrolledText
+else:
+    from Tix import *
+    import Tkinter
+    import tkFont
+    import ttk
+    from tkFileDialog import askopenfilename, askdirectory
+    from ScrolledText import ScrolledText
 
 from ttkcalendar import *
+
+import os
+from glob import glob
 import calendar
-import tkMessageBox
-from ScrolledText import ScrolledText
+
 
 from scipy.misc import imresize, imread
 from scipy.signal import convolve2d
@@ -74,12 +86,13 @@ from skimage.measure import regionprops, label
 import numpy as np
 import cv2
 
-import cPickle as pickle
-import datetime as DT
-#import calendar
+try:
+   import cPickle as pickle
+except:
+   import pickle
 
-import matplotlib
-matplotlib.use("Agg")
+
+import datetime as DT
 import matplotlib.dates as md
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
@@ -115,7 +128,6 @@ def ani_frames(infiles):
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
 
-    #im = ax.imshow(imresize(imread(infiles[0]),.25))
     im = ax.imshow(imread(infiles[0]))
 
     def init():
@@ -123,7 +135,6 @@ def ani_frames(infiles):
        return im
 
     def update_img(i):
-        #im.set_data(imresize(imread(infiles[i]),.25))
         im.set_data(imread(infiles[i]))
 
         ext = os.path.splitext(infiles[i])[1][1:]
@@ -131,7 +142,6 @@ def ani_frames(infiles):
         time = infiles[i].split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
 
         plt.title(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M').strftime('%d %b %Y, %H:%M'))
-        #plt.title(infiles[i].split(os.sep)[-1].split('.')[0])
         return im
 
     ani = animation.FuncAnimation(fig,update_img, frames=len(infiles), interval=100, init_func = init, save_count=len(infiles))
@@ -171,7 +181,7 @@ def ani_frames_withQdat(infiles, dat):
     Qall = np.interp(ti,dat['timeunix'],dat['Qcfs'])
 
     tiplot = []
-    for i in xrange(len(ti)):
+    for i in range(len(ti)):
        tiplot.append(DT.datetime.fromtimestamp(ti[i]))
 
     aspect = (np.max(ti) - np.min(np.asarray(ti))) / (np.max(np.asarray(Qall)) - np.min(np.asarray(Qall)))
@@ -179,13 +189,10 @@ def ani_frames_withQdat(infiles, dat):
     print(aspect)
 
     ax2 = fig.add_subplot(212, aspect=aspect)#.002)
-    #ax2.set_aspect('auto')
-    #ax2 = plt.axes(ylim=(np.min(np.asarray(Q))-100, np.max(np.asarray(Q))+100))
 
     xfmt = md.DateFormatter('%Y-%m-%d')
     ax2.xaxis.set_major_formatter(xfmt)
 
-    #plt.plot(datenums,Q,'k')
     plt.plot(tiplot, Qall,'k')
     plt.subplots_adjust(bottom=0.2)
     plt.xticks( rotation=25 )
@@ -294,31 +301,8 @@ def load_gagedata(nearest_gage, site):
 #======================================================
 def read_image(filename, scale):
    img = imresize(cv2.imread(filename),scale) #resize image so quarter size
-   #imagehsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
    im = imresize(cv2.imread(filename,0),scale) #resize image so quarter size
-   #la = cv2.Laplacian(im,cv2.CV_64F)
-   ## get std and mean through stndard deviation, fast thru convolution
-   #m1, s1 = std_convoluted(im, .5)
-   #m2, s2 = std_convoluted(im, .25)
-   return img, im #, imagehsv, la, m1, s1, m2, s2
-
-##=====================================================
-#def clean_mask(mask, imagehsv, s1, s2, m1, m2):
-#    try:
-#       mask[imagehsv[:,:,0]>np.percentile(imagehsv[:,:,0],75)] = 2
-#       mask[imagehsv[:,:,1]>np.percentile(imagehsv[:,:,1],75)] = 2
-#       mask[imagehsv[:,:,2]<np.percentile(imagehsv[:,:,2],50)] = 2
-
-#       mask[s1>np.percentile(s1,75)] = 2
-#       mask[s2>np.percentile(s2,75)] = 2
-#       mask[la>np.percentile(la,75)] = 2
-
-#       mask[m1<np.percentile(m1,50)] = 2
-#       mask[m2<np.percentile(m2,50)] = 2
-#    except:
-#       pass
-
-#    return mask
+   return img, im #
 
 #=====================================================
 def finalise_mask(mask2, Athres):
@@ -337,22 +321,6 @@ def finalise_mask(mask2, Athres):
 
     return mask2
 
-###======================================================
-#def std_convoluted(image, N):
-#    """
-#    fast windowed mean and stadev based on kernel convolution
-#    """
-#    im = np.array(image, dtype=float)
-#    im2 = im**2
-#    ones = np.ones(im.shape)
-
-#    kernel = np.ones((2*N+1, 2*N+1))
-#    s = convolve2d(im, kernel, mode="same")
-#    s2 = convolve2d(im2, kernel, mode="same")
-#    ns = convolve2d(ones, kernel, mode="same")
-
-#    return s/ns , np.sqrt((s2 - s**2 / ns) / ns)
-
 ##======================================================
 def onmouse(event,x,y,flags,param):
     global img,img2,drawing,value,mask,rectangle,rect,rect_or_mask,ix,iy,rect_over
@@ -363,7 +331,7 @@ def onmouse(event,x,y,flags,param):
 
     DRAW_BG = {'color' : BLACK, 'val' : 0}
     DRAW_FG = {'color' : WHITE, 'val' : 1}
-    thickness = 2           # brush thickness
+    thickness = 3           # brush thickness
 
     # Draw Rectangle
     if event == cv2.EVENT_RBUTTONDOWN:
@@ -515,7 +483,7 @@ def gui():
     def _get_images():
         self.imagefiles = sorted(askopenfilename(filetypes = [ ("Image Files", ("*.jpg", "*.JPG", '*.jpeg')), ("TIF",('*.tif', '*.tiff')), ("PNG",('*.PNG', '*.png'))] , multiple=True))
 
-        for k in xrange(len(self.imagefiles)):
+        for k in range(len(self.imagefiles)):
            print('image '+str(k)+' of '+str(len(self.imagefiles)-1))
            print(self.imagefiles[k])
         self.folder = os.path.dirname(self.imagefiles[0])
@@ -550,8 +518,6 @@ def gui():
           rect_or_mask = 100      # flag for selecting rect or mask mode
           value = DRAW_FG         # drawing initialized to FG
           thickness = 2           # brush thickness
-          #Athres = 1000
-          #scale = 0.25
 
           img, im = read_image(filename, scale)
           img2 = img.copy()                               # a copy of original image
@@ -632,13 +598,9 @@ def gui():
 
                   outfile = self.folder_out +os.sep+os.path.basename(filename)+"_out.p"
 
-                  #pickle.dump( {'contour_x':x, 'contour_y':y, 'out_img':output, 'fg_x':fg_x, 'fg_y':fg_y, 'bg_x':bg_x, 'bg_y':bg_y, 'rect_x':rect_x, 'rect_y':rect_y, 'scale':scale, 'img':img2, 'img_hsv':imagehsv, 'laplacian':la, 'meanfilt':m1, 'stdevfilt':s1}, open(outfile, "wb") ) #open( filename+"_out.p", "wb" ) )
-
-                  pickle.dump( {'contour_x':x, 'contour_y':y, 'out_img':output, 'fg_x':fg_x, 'fg_y':fg_y, 'bg_x':bg_x, 'bg_y':bg_y, 'rect_x':rect_x, 'rect_y':rect_y, 'scale':scale, 'img':img2}, open(outfile, "wb") ) #open( filename+"_out.p", "wb" ) )
+                  pickle.dump( {'contour_x':x, 'contour_y':y, 'out_img':output, 'fg_x':fg_x, 'fg_y':fg_y, 'bg_x':bg_x, 'bg_y':bg_y, 'rect_x':rect_x, 'rect_y':rect_y, 'scale':scale, 'img':img2}, open(outfile, "wb") ) 
 
                   print(" Results saved\n")
-                  #tmp = pickle.load(open('22mile.JPG_out.p', 'rb'))
-                  #plt.imshow(tmp['img']); plt.plot(tmp['contour_x'], tmp['contour_y'], 'r'); plt.show()
                   break
                   cv2.destroyAllWindows()
 
@@ -727,25 +689,25 @@ def gui():
     sitelist = np.genfromtxt('sites.txt', dtype=str)
 
     submenu1 = Menu(self.bb.menu)
-    for site in xrange(11):
+    for site in range(11):
        submenu1.add_command(label=sitelist[site], command = lambda v=site: _SetSitePick(master, v),  font=('Arial', 10, 'bold', 'italic'))
 
     self.bb.menu.add_cascade(label='Upper Marble Canyon', menu=submenu1, underline=0)
 
     submenu2 = Menu(self.bb.menu)
-    for site in xrange(12,34):
+    for site in range(12,34):
        submenu2.add_command(label=sitelist[site], command = lambda v=site: _SetSitePick(master, v),  font=('Arial', 10, 'bold', 'italic'))
 
     self.bb.menu.add_cascade(label='Lower Marble Canyon', menu=submenu2, underline=0)
 
     submenu3 = Menu(self.bb.menu)
-    for site in xrange(35, 47):
+    for site in range(35, 47):
        submenu3.add_command(label=sitelist[site], command = lambda v=site: _SetSitePick(master, v),  font=('Arial', 10, 'bold', 'italic'))
 
     self.bb.menu.add_cascade(label='Eastern Grand Canyon', menu=submenu3, underline=0)
 
     submenu4 = Menu(self.bb.menu)
-    for site in xrange(48,71):
+    for site in range(48,71):
        submenu4.add_command(label=sitelist[site], command = lambda v=site: _SetSitePick(master, v),  font=('Arial', 10, 'bold', 'italic'))
 
     self.bb.menu.add_cascade(label='Western Grand Canyon', menu=submenu4, underline=0)
@@ -917,7 +879,7 @@ def gui():
         imagefolder = rootfolder + self.sitepick + os.sep
 
         # get a list of all the jpegs in the specified site folder
-        types = ('*.jpg', '*.JPG', '*.jpeg')
+        types = ('*.jpg', '*.JPG', '*.jpeg', '*.png', '*.PNG', '*.tif', '*.tiff', '*.TIF')
         infiles = []
         for filetypes in types:
            infiles.extend(glob(imagefolder+filetypes))
@@ -973,12 +935,12 @@ def gui():
         Q = np.asarray(Q)
         I = np.asarray(I)
 
-        indices = np.where((I>=start_time) & (I<=end_time) & (Q>=self.Nvar.get()-self.NvarTol.get()) & (Q<=self.Nvar.get()+self.NvarTol.get()))[0] #100
+        indices = np.where((I>=start_time) & (I<=end_time) & (Q>=self.Nvar.get()-self.NvarTol.get()) & (Q<=self.Nvar.get()+self.NvarTol.get()))[0] 
         print("Number of files within time window and near specified discharge: "+str(len(indices)))
 
-        self.imagefiles = np.asarray(F)[indices] #infiles
+        self.imagefiles = np.asarray(F)[indices] 
 
-        self.folder_out = os.getcwd() + os.sep + 'seg_results' #self.folder+'_seg_results'
+        self.folder_out = os.getcwd() + os.sep + 'seg_results'
 
         try:
            os.mkdir(self.folder_out)
@@ -1011,7 +973,7 @@ def gui():
 
     # Populate the second pane. Note that the content doesn't really matter
     t_frame = Tkinter.Frame(nb)
-    nb.add(t_frame, text='Process Images Based on Site/Time')#, state='disabled')
+    nb.add(t_frame, text='Process Images Based on Site/Time')
 
     t_frame.configure(background='purple')
 
@@ -1031,25 +993,25 @@ def gui():
     sitelist = np.genfromtxt('sites.txt', dtype=str)
 
     submenu1 = Menu(self.bb.menu)
-    for site in xrange(11):
+    for site in range(11):
        submenu1.add_command(label=sitelist[site], command = lambda v=site: _SetSitePick(master, v),  font=('Arial', 10, 'bold', 'italic'))
 
     self.bb.menu.add_cascade(label='Upper Marble Canyon', menu=submenu1, underline=0)
 
     submenu2 = Menu(self.bb.menu)
-    for site in xrange(12,34):
+    for site in range(12,34):
        submenu2.add_command(label=sitelist[site], command = lambda v=site: _SetSitePick(master, v),  font=('Arial', 10, 'bold', 'italic'))
 
     self.bb.menu.add_cascade(label='Lower Marble Canyon', menu=submenu2, underline=0)
 
     submenu3 = Menu(self.bb.menu)
-    for site in xrange(35, 47):
+    for site in range(35, 47):
        submenu3.add_command(label=sitelist[site], command = lambda v=site: _SetSitePick(master, v),  font=('Arial', 10, 'bold', 'italic'))
 
     self.bb.menu.add_cascade(label='Eastern Grand Canyon', menu=submenu3, underline=0)
 
     submenu4 = Menu(self.bb.menu)
-    for site in xrange(48,71):
+    for site in range(48,71):
        submenu4.add_command(label=sitelist[site], command = lambda v=site: _SetSitePick(master, v),  font=('Arial', 10, 'bold', 'italic'))
 
     self.bb.menu.add_cascade(label='Western Grand Canyon', menu=submenu4, underline=0)
@@ -1156,7 +1118,7 @@ def gui():
         imagefolder = rootfolder + self.sitepick + os.sep
 
         # get a list of all the jpegs in the specified site folder
-        types = ('*.jpg', '*.JPG', '*.jpeg')
+        types = ('*.jpg', '*.JPG', '*.jpeg', '*.png', '*.PNG', '*.tif', '*.tiff', '*.TIF')
         infiles = []
         for filetypes in types:
            infiles.extend(glob(imagefolder+filetypes))
@@ -1194,14 +1156,6 @@ def gui():
             date = filename.split(os.sep)[-1].split('RC')[-1].split('_')[1]
             time = filename.split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
             timestamp = DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M')
-            #if self.idealtime != 'all':
-            #   if timestamp.hour == (idealtime) % 24 and timestamp.minute >= 30:
-            #      image_time = toTimestamp(timestamp)+ 6 * 60 * 60
-            #      I.append(image_time) # add 6 hours (mst to gmt)
-            #   elif timestamp.hour == (idealtime) % 24 and timestamp.minute <= 30:
-            #      image_time = toTimestamp(timestamp)+ 6 * 60 * 60
-            #      I.append(image_time) # add 6 hours (mst to gmt)
-            #else:
             image_time = toTimestamp(timestamp)+ 6 * 60 * 60
             I.append(image_time) # add 6 hours (mst to gmt)
 
@@ -1212,7 +1166,7 @@ def gui():
 
         self.imagefiles = np.asarray(F)[indices]
 
-        self.folder_out = os.getcwd() + os.sep + 'seg_results' #self.folder+'_seg_results'
+        self.folder_out = os.getcwd() + os.sep + 'seg_results' 
 
         try:
            os.mkdir(self.folder_out)
@@ -1235,123 +1189,3 @@ if __name__ == '__main__':
    gui()
 
 
-#    #=======================
-#    # discharge
-#    self.Nvar = Tkinter.DoubleVar()
-#    Nscale = Tkinter.Scale( t_frame, variable = self.Nvar, from_=5000, to=45000, resolution=1000, tickinterval=1000, label = 'Discharge' )
-#    Nscale.set(8000)
-#    Nscale.grid(row=1, column=1,  pady=(2,4))
-#    Nscale.configure(background='thistle3', fg="black")
-
-#    #=======================
-#    def _qget_images(): #(master, v):
-#        self.qimagefiles = askopenfilename(filetypes = [ ("Image Files", ("*.jpg", "*.JPG", '*.jpeg')), ("TIF",('*.tif', '*.tiff'))] , multiple=True)
-
-#        for k in xrange(len(self.qimagefiles)):
-#           print(self.qimagefiles[k])
-#        self.qfolder = os.path.dirname(self.qimagefiles[0])
-
-#        #self.q_son_btn.configure(fg='thistle3', background="black")
-#
-#        self.update()
-
-#	#=======================
-#	def _qstart(start):
-#           self.startdate = start.selection
-#           print("======================")
-#           print("Start Date:")
-#           print(self.startdate)
-#           print("======================")
-#           self.update()
-
-#	#=======================
-#	def _qend(end):
-#           print("======================")
-#           print("End Date:")
-#           self.enddate = end.selection
-#           print(self.enddate)
-#           print("======================")
-#           self.update()
-
-#	#=======================
-#	def _SetSitePick(master, v):
-#           sitelist = np.genfromtxt('sites.txt', dtype=str)
-#
-#	   self.sitepick= sitelist[v]
-#           print("site selected: "+self.sitepick)
-
-#	   #self.bb.configure(fg='thistle3', background="black")
-#	   self.update()
-
-#	#=======================
-#	def _qquit(master):
-#           cv2.destroyAllWindows()
-#           master.destroy()
-
-#	#=======================
-#	def _qfind():
-#           imagefolder = rootfolder + self.sitepick + os.sep
-
-#           # get a list of all the jpegs in the specified site folder
-#           types = ('*.jpg', '*.JPG', '*.jpeg')
-#           infiles = []
-#           for filetypes in types:
-#              infiles.extend(glob(imagefolder+filetypes))
-
-#           print("Number of files to search: "+str(len(infiles)))
-
-#           # determine the nearest gage and load the appropriate discharge data
-#           site = int(self.sitepick.split('RC')[-1].split('_')[0][:3])
-#           gages = np.asarray([0,30,61,87,166,225])
-#           nearest_gage = np.argmin(np.abs(site - gages))
-
-#           print("Loading data from nearest gage ("+str(gages[nearest_gage])+" mile)")
-#           dat = load_gagedata(nearest_gage)
-
-#           # get unix timestamps rfom the user selected start and end dates
-#           #start_time = toTimestamp(DT.datetime.strptime(self.startdate, '%Y-%m-%d %H:%M:%S'))+ 6 * 60 * 60
-#           #end_time = toTimestamp(DT.datetime.strptime(self.enddate, '%Y-%m-%d %H:%M:%S'))+ 6 * 60 * 60
-#           start_time = toTimestamp(self.startdate)+ 6 * 60 * 60
-#           end_time = toTimestamp(self.enddate)+ 6 * 60 * 60
-#
-#           # get unix timestamps and discharges of every file
-#           I = []; Q = []
-#           for filename in infiles:
-#               ext = os.path.splitext(filename)[1][1:]
-#               date = filename.split(os.sep)[-1].split('RC')[-1].split('_')[1]
-#               time = filename.split(os.sep)[-1].split('RC')[-1].split('_')[2].split('.'+ext)[0]
-#               image_time = toTimestamp(DT.datetime.strptime(date+' '+time, '%Y%m%d %H%M'))+ 6 * 60 * 60
-#               I.append(image_time)
-#               # add 6 hours (mst to gmt)
-#               Q.append(np.interp(image_time,dat['timeunix'],dat['Qcfs']))
-
-#           Q = np.asarray(Q)
-#           I = np.asarray(I)
-
-#           indices = np.where((I>=start_time) & (I<=end_time) & (Q>=self.Nvar.get()-100) & (Q<=self.Nvar.get()+100))[0]
-#           print("Number of files within time window and near specified discharge: "+str(len(indices)))
-
-#           self.qimagefiles = np.asarray(infiles)[indices]
-#	   self.update()
-
-#	#=======================
-#	def _qget_images(): #(master, v):
-#	    self.qimagefiles = askopenfilename(filetypes = [ ("Image Files", ("*.jpg", "*.JPG", '*.jpeg')), ("TIF",('*.tif', '*.tiff'))] , multiple=True)
-
-#	    for k in xrange(len(self.qimagefiles)):
-#	       print(self.qimagefiles[k])
-#	    self.qfolder = os.path.dirname(self.qimagefiles[0])
-#
-#	    #self.son_btn.configure(fg='thistle3', background="black")
-
-#	    self.q_son_btn.configure(fg='thistle3', background="black")
-#
-#	    self.update()
-
-               #img = imresize(cv2.imread(filename),scale) #resize image so quarter size
-               #imagehsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-               #im = imresize(cv2.imread(filename,0),scale) #resize image so quarter size
-               #la = cv2.Laplacian(im,cv2.CV_64F)
-               # get std and mean through stndard deviation, fast thru convolution
-               #m1, s1 = std_convoluted(im, .5)
-               #m2, s2 = std_convoluted(im, .25)
