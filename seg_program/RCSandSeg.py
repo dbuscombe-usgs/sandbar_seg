@@ -51,8 +51,9 @@ Key 's' - To save the results
 
 from __future__ import print_function, division
 
-#import matplotlib
-#matplotlib.use("Agg")
+## if receive OpenCV errors, comment the next 2 lines out
+import matplotlib
+matplotlib.use("WX") ##("Agg")
 
 import sys
 
@@ -112,7 +113,7 @@ rootfolder = askdirectory(initialdir=rootfolder)
 rootfolder += os.sep
 print(rootfolder)
 
-Athres = 1000 #smallest permissible bar size
+Athres = 100 #smallest permissible bar size
 scale = 0.25 #size of image actually worked with
 
 #=========================================================
@@ -302,6 +303,13 @@ def load_gagedata(nearest_gage, site):
 def read_image(filename, scale):
    img = imresize(cv2.imread(filename),scale) #resize image so quarter size
    im = imresize(cv2.imread(filename,0),scale) #resize image so quarter size
+
+   im[im<0] = 0
+   im[im>255] = 255
+
+   img[img<0] = 0
+   img[img>255] = 255
+
    return img, im #
 
 #=====================================================
@@ -619,24 +627,19 @@ def gui():
               elif k == ord('n'): # segment the image
                   #print(""" For finer touchups, mark foreground and background after pressing keys 0-3
                   #and again press 'n' \n""")
-                  if (rect_or_mask == 0):         # grabcut with rect
-                      bgdmodel = np.zeros((1,65),np.float64)
-                      fgdmodel = np.zeros((1,65),np.float64)
-                      try:
-                         cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,1,cv2.GC_INIT_WITH_RECT)
-                      except:
-                         pass
-
-                      #mask = clean_mask(mask, imagehsv, s1, s2, m1, m2)
-
-                      rect_or_mask = 1
-                  elif rect_or_mask == 1:         # grabcut with mask
-                      bgdmodel = np.zeros((1,65),np.float64)
-                      fgdmodel = np.zeros((1,65),np.float64)
-                      try:
-                         cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,1,cv2.GC_INIT_WITH_MASK)
-                      except:
-                         pass  
+                  try:
+                     if (rect_or_mask == 0):         # grabcut with rect
+                        bgdmodel = np.zeros((1,65),np.float64)
+                        fgdmodel = np.zeros((1,65),np.float64)
+                        cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,3,cv2.GC_INIT_WITH_RECT)
+                        #mask = clean_mask(mask, imagehsv, s1, s2, m1, m2)
+                        rect_or_mask = 1
+                     elif rect_or_mask == 1:         # grabcut with mask
+                        bgdmodel = np.zeros((1,65),np.float64)
+                        fgdmodel = np.zeros((1,65),np.float64)
+                        cv2.grabCut(img2,mask,rect,bgdmodel,fgdmodel,3,cv2.GC_INIT_WITH_MASK)
+                  except:
+                     pass
 
               mask2 = np.where((mask==1) + (mask==3),255,0).astype('uint8')
               mask2 = finalise_mask(mask2, Athres)

@@ -17,24 +17,24 @@ def timeConv(x):
     except ValueError as err:
         return DT.datetime.strptime(x, '%Y-%m-%d %H:%M:%S') + DT.timedelta(0,6*60*60) #6 hours
 
-## 0-mile
-#time = np.genfromtxt(glob('rm0*.tsv')[0], dtype='object', delimiter=',', skip_header=1, usecols=(0), converters = {0: timeConv})
+# 0-mile
+time = np.genfromtxt(glob('rm0*.tsv')[0], dtype='object', delimiter='\t', skip_header=1, usecols=(0), converters = {0: timeConv})
 
-#Qcfs= np.genfromtxt(glob('rm0*.tsv')[0], skip_header=1, usecols=(1), dtype='float', delimiter=',') 
-
-#timeunix = np.array([toTimestamp(d) for d in time]) 
-
-#pickle.dump( {"time": time, "timeunix": timeunix, "Qcfs": Qcfs}, open( "rm0_time_Qcfs.p", "wb" ), protocol=pickle.HIGHEST_PROTOCOL )
-
-
-# 30 mile
-time = np.genfromtxt(glob('rm30*.tsv')[0], dtype='object', delimiter='\t', skip_header=1, usecols=(0), converters = {0: timeConv})
-
-Qcfs= np.genfromtxt(glob('rm30*.tsv')[0], skip_header=1, usecols=1, dtype='float', delimiter='\t') 
+Qcfs= np.genfromtxt(glob('rm0*.tsv')[0], skip_header=1, usecols=(1), dtype='float', delimiter='\t') 
 
 timeunix = np.array([toTimestamp(d) for d in time]) 
 
-pickle.dump( {"time": time, "timeunix": timeunix, "Qcfs": Qcfs}, open( "rm30_time_Qcfs.p", "wb" ), protocol=pickle.HIGHEST_PROTOCOL )
+pickle.dump( {"time": time, "timeunix": timeunix, "Qcfs": Qcfs}, open( "rm0_time_Qcfs.p", "wb" ), protocol=pickle.HIGHEST_PROTOCOL )
+
+
+## 30 mile
+#time = np.genfromtxt(glob('rm30*.tsv')[0], dtype='object', delimiter='\t', skip_header=1, usecols=(0), converters = {0: timeConv})
+
+#Qcfs= np.genfromtxt(glob('rm30*.tsv')[0], skip_header=1, usecols=1, dtype='float', delimiter='\t') 
+
+#timeunix = np.array([toTimestamp(d) for d in time]) 
+
+#pickle.dump( {"time": time, "timeunix": timeunix, "Qcfs": Qcfs}, open( "rm30_time_Qcfs.p", "wb" ), protocol=pickle.HIGHEST_PROTOCOL )
 
 
 ## 61 mile
